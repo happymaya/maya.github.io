@@ -83,7 +83,7 @@ theme_mode:   # [light|dark]
 img_cdn:
 
 # the avatar on sidebar, support local or CORS resources
-avatar: https://images.happymaya.cn/assert/avatar/avatar-1.png
+avatar: https://images.happymaya.cn/assert/avatar/logo.png
 
 # boolean type, the global switch for ToC in posts.
 toc: true
