@@ -1,5 +1,5 @@
 ---
-title: Paxos 算法
+title: Base 理论
 author:
   name: superhsc
   link: https://github.com/happymaya
@@ -8,8 +8,7 @@ categories: [Architecture Design, Distributed]
 tags: [distributed,CAP,Paxos]
 ---
 
-对于 CAP 来说，放弃强一致性，追求分区容错性和可用性，是很多分布式设计时的选择。在工程实践中，基于 CAP 定理的逐步演化，就提出了 Base 理论。
-
+对于 CAP 来说，放弃强一致性，追求分区容错性和可用性，是很多分布式设计时的选择。在工程实践中，基于 CAP 定理的逐步演化，提出了 Base 理论。
 
 
 # Base 理论
