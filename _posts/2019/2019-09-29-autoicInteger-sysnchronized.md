@@ -1,19 +1,16 @@
 ---
-title: HashMap 为什么是线程不安全的
+title:  AtomicInteger 和 synchronized 的异同点
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-09-29 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-# 42. AtomicInteger 和 synchronized 的异同点？
 
 用原子类和 synchronized 关键字来解决一个经典的线程安全问题，给出具体的代码对比，然后再分析它们背后的区别。
-
-
 
 ### 代码对比
 

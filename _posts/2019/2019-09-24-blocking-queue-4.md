@@ -1,9 +1,9 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 阻塞队列和非阻塞队列的并发安全原理
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-09-24 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
@@ -28,7 +28,7 @@ int count;
 
 另外，我们再来看下面这三个变量：
 
-```
+```java
 final ReentrantLock lock;
 private final Condition notEmpty;
 private final Condition notFull;
@@ -40,7 +40,7 @@ ArrayBlockingQueue 正是利用了 ReentrantLock 和它的两个 Condition 实�
 
 下面，我们来分析一下最重要的 put 方法：
 
-```
+```java
 public void put(E e) throws InterruptedException {
     checkNotNull(e);
     final ReentrantLock lock = this.lock;
@@ -61,7 +61,7 @@ public void put(E e) throws InterruptedException {
 
 你看到这段代码不知道是否眼熟，在第 5 课时我们讲过，用 Condition 实现生产者/消费者模式的时候，写过一个 put 方法，代码如下：
 
-```
+```java
 public void put(Object o) throws InterruptedException {
     lock.lock();
     try {
@@ -86,7 +86,7 @@ public void put(Object o) throws InterruptedException {
 
 看完阻塞队列之后，我们就来看看非阻塞队列 ConcurrentLinkedQueue。顾名思义，ConcurrentLinkedQueue 是使用链表作为其数据结构的，我们来看一下关键方法 offer 的源码：
 
-```
+```java
 public boolean offer(E e) {
     checkNotNull(e);
     final Node<E> newNode = new Node<E>(e);
@@ -118,7 +118,7 @@ public boolean offer(E e) {
 
 在这里我们不去一行一行分析具体的内容，而是把目光放到整体的代码结构上，在检查完空判断之后，可以看到它整个是一个大的 for 循环，而且是一个非常明显的死循环。在这个循环中有一个非常亮眼的 p.casNext 方法，这个方法正是利用了 CAS 来操作的，而且这个死循环去配合 CAS 也就是典型的乐观锁的思想。我们就来看一下 p.casNext 方法的具体实现，其方法代码如下：
 
-```
+```java
 boolean casNext(Node<E> cmp, Node<E> val) {
     return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
 }
@@ -131,7 +131,5 @@ boolean casNext(Node<E> cmp, Node<E> val) {
 ## 总结
 
 中阻塞队列最主要是利用了 ReentrantLock 以及它的 Condition 来实现，而非阻塞队列则是利用 CAS 方法实现线程安全。
-
-
 
 参考：https://javadoop.com/post/java-concurrent-queue

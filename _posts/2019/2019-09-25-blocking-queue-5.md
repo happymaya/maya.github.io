@@ -1,9 +1,9 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 选择合适的阻塞队列
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-09-25 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
@@ -16,40 +16,21 @@ mermaid: true
 所以我们就首先来复习一下这些非常经典的线程池是如何挑选阻塞队列的，借鉴它们的经验之后，我们再去总结一套规则，来归纳出自己在选取阻塞队列时可以对哪些点进行考虑。
 
 
-
-
-
 **线程池对于阻塞队列的选择**
-
-
-
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-pool.png)
-
-
 
 下面我们来看线程池的选择要诀。上面表格左侧是线程池，右侧为它们对应的阻塞队列，你可以看到 5 种线程池只对应了 3 种阻塞队列，下面我们对它们进行逐一的介绍。
 
-
-
 - **FixedThreadPool（SingleThreadExecutor 同理）选取的是 LinkedBlockingQueue**
 
-
-
 因为 LinkedBlockingQueue 不同于 ArrayBlockingQueue，ArrayBlockingQueue 的容量是有限的，而 LinkedBlockingQueue 是链表长度默认是可以无限延长的。
-
-
 
 由于 FixedThreadPool 的线程数是固定的，在任务激增的时候，它无法增加更多的线程来帮忙处理 Task，所以需要像 LinkedBlockingQueue 这样没有容量上限的 Queue 来存储那些还没处理的 Task。
 
 
-
 如果所有的 corePoolSize 线程都正在忙，那么新任务将会进入阻塞队列等待，由于队列是没有容量上限的，队列永远不会被填满，这样就保证了对于线程池 FixedThreadPool 和 SingleThreadExecutor 而言，不会拒绝新任务的提交，也不会丢失数据。
 
-
-
 - **CachedThreadPool 选取的是 SynchronousQueue**
-
-
 
 对于 CachedThreadPool 而言，为了避免新提交的任务被拒绝，它选择了无限制的 maximumPoolSize（在专栏中，maxPoolSize 等同于 maximumPoolSize），所以既然它的线程的最大数量是无限的，也就意味着它的线程数不会受到限制，那么它就不需要一个额外的空间来存储那些 Task，因为每个任务都可以通过新建线程来处理。
 
@@ -124,7 +105,3 @@ SynchronousQueue 会直接把任务交给线程，而不需要另外保存它们
 
 
 另外，SynchronousQueue 性能往往优于其他实现，因为它只需要“直接传递”，而不需要存储的过程。如果我们的场景需要直接传递的话，可以优先考虑 SynchronousQueue。
-
-
-
-在本课时，我们首先回顾了线程池对于阻塞队列的选取规则，然后又看到了 ArrayBlockingQueue 的特点，接下来我们总结归纳了通常情况下，可以从功能、容量、能否扩容、内存结构和性能这 5 个角度考虑问题，结合业务选取最适合我们的阻塞队列。
