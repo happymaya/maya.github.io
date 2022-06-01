@@ -10,7 +10,7 @@ math: true
 mermaid: true
 ---
 
-## 线程池的参数
+# 线程池的参数
 
 | 参数名                   | 含义                     |
 | ------------------------ | ------------------------ |
@@ -24,17 +24,17 @@ mermaid: true
 
 线程池中各个参数的含义，如表所示线程池主要有 6 个参数，其中第 3 个参数由 keepAliveTime + 时间单位组成。各自的含义。
 
-### corePoolSize 与 maximumPoolSize 
+# corePoolSize 与 maximumPoolSize 
 
 corePoolSize 是核心线程数，也就是常驻线程池的线程数量，与它对应的是 maxPoolSize，表示线程池最大线程数量，当任务特别多而 corePoolSize 核心线程数无法满足需求的时候，就会向线程池中增加线程，以便应对任务突增的情况。
 
-#### 线程创建的时机
+## 线程创建的时机
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-pool-params-2.png)
 
 如上图所示，当提交任务后，线程池首先会检查当前线程数，如果此时线程数小于核心线程数，比如最开始线程数量为 0，则新建线程并执行任务，随着任务的不断增加，线程数会逐渐增加并达到核心线程数，此时如果仍有任务被不断提交，就会被放入 workQueue 任务队列中，等待核心线程执行完当前任务后重新从 workQueue 中提取正在等待被执行的任务。
 
-此时，假设我们的任务特别的多，已经达到了 workQueue 的容量上限，这时线程池就会启动后备力量，也就是 maxPoolSize 最大线程数，线程池会在 corePoolSize 核心线程数的基础上继续创建线程来执行任务，假设任务被不断提交，线程池会持续创建线程直到线程数达到 maximumPoolSize 最大线程数，如果依然有任务被提交，这就超过了线程池的最大处理能力，这个时候线程池就会拒绝这些任务，可以看到实际上任务进来之后，线程池会逐一判断 corePoolSize、workQueue、maxiPoolSize，如果依然不能满足需求，则会拒绝任务。
+此时，假设任务特别的多，已经达到了 workQueue 的容量上限，这时线程池就会启动后备力量，也就是 maxPoolSize 最大线程数，线程池会在 corePoolSize 核心线程数的基础上继续创建线程来执行任务，假设任务被不断提交，线程池会持续创建线程直到线程数达到 maximumPoolSize 最大线程数，如果依然有任务被提交，这就超过了线程池的最大处理能力，这个时候线程池就会拒绝这些任务，可以看到实际上任务进来之后，线程池会逐一判断 corePoolSize、workQueue、maxiPoolSize，如果依然不能满足需求，则会拒绝任务。
 
 
 通过上面的流程图，corePoolSize 和 maximumPoolSize 的具体含义如下：

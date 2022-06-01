@@ -18,33 +18,31 @@ mermaid: true
 5. SingleThreadScheduledExecutor
 6. ForkJoinPool
 
-## 第一种：FixedThreadPool
+# FixedThreadPool
 
-- 核心线程数和最大线程数一样，因此可以把它看作是固定线程数的线程池
+- 核心线程数和最大线程数一样，可以把它看作是**固定线程数的线程池**。
 
 特点：
-- 线程池种的线程数除了初始阶段需要从 0 开始增加外，之后的线程数量就是固定的；
+- 线程池中的线程数除了初始阶段需要从 0 开始增加外，之后的线程数量就是固定的；
 - 就算任务数超过线程数，线程池也不会再创建更多的线程来处理任务，而是会把超出线程处理能力的任务放到任务队列中进行等待；
 - 就算任务队列满了，到了本该继续增加线程数的时候，由于它的最大线程数和核心线程数是一样的，所以也无法再增加新的线程了。
 
-![](https://images.happymaya.cn/assert/java/thread/java-thread-fixedthreadpool.png)
+![FixedThreadPool](https://images.happymaya.cn/assert/java/thread/java-thread-fixedthreadpool.png)
 
-如图所示，线程池有 t0~t9，10 个线程，它们会不停地执行任务，如果某个线程任务执行完了，就会从任务队列中获取新的任务继续执行，期间线程数量不会增加也不会减少，始终保持在 10 个。
+如图所示，线程池有 t0 ~ t9，10 个线程，它们会不停地执行任务，如果某个线程任务执行完了，就会从任务队列中获取新的任务继续执行，期间线程数量不会增加也不会减少，始终保持在 10 个。
 
-
-
-## 第二种：CachedThreadPool
+# CachedThreadPool
 
 这个线程池可以称作可缓存线程池，
 
 特点：
-
 - 线程数是几乎可以无限增加的（实际最大可以达到 Integer.MAX_VALUE，为 2^31-1，这个数非常大，所以基本不可能达到）；
-- 当线程闲置时还可以对线程进行回收，也就是说该线程池的线程数量不是固定不变的
+- 线程闲置时还可以对线程进行回收，也就是说该线程池的线程数量是一直改变的；
 - 它也有一个用于存储提交任务的队列，但这个队列是 SynchronousQueue，队列的容量为0，实际不存储任何任务，只负责对任务进行中转和传递，所以效率比较高。
 
-当我们提交一个任务后，线程池会判断已创建的线程中是否有空闲线程，如果有空闲线程则将任务直接指派给空闲线程，如果没有空闲线程，则新建线程去执行任务，这样就做到了动态地新增线程。让我们举个例子，如下方代码所示。
+当提交一个任务后，线程池会判断已创建的线程中是否有空闲线程，如果有空闲线程则将任务直接指派给空闲线程，如果没有空闲线程，则新建线程去执行任务，这样就做到了动态地新增线程。
 
+如下方代码所示。
 ```java
 ExecutorService service = Executors.newCachedThreadPool();
     for (int i = 0; i < 1000; i++) { 
@@ -53,28 +51,25 @@ ExecutorService service = Executors.newCachedThreadPool();
  }
 ```
 
-使用 for 循环提交 1000 个任务给 CachedThreadPool，假设这些任务处理的时间非常长，会发生什么情况呢？因为 for 循环提交任务的操作是非常快的，但执行任务却比较耗时，就可能导致 1000 个任务都提交完了但第一个任务还没有被执行完，所以此时 CachedThreadPool 就可以动态的伸缩线程数量，随着任务的提交，不停地创建 1000 个线程来执行任务，而当任务执行完之后，假设没有新的任务了，那么大量的闲置线程又会造成内存资源的浪费，这时线程池就会检测线程在 60 秒内有没有可执行任务，如果没有就会被销毁，最终线程数量会减为 0。
+使用 for 循环提交 1000 个任务给 CachedThreadPool，假设这些任务处理的时间非常长，会发生什么情况呢？
 
+因为 for 循环提交任务的操作是非常快的，但执行任务却比较耗时，就可能导致 1000 个任务都提交完了但第一个任务还没有被执行完，所以此时 CachedThreadPool 就可以动态的伸缩线程数量，随着任务的提交，不停地创建 1000 个线程来执行任务，而当任务执行完之后，假设没有新的任务了，那么大量的闲置线程又会造成内存资源的浪费，这时线程池就会检测线程在 60 秒内有没有可执行任务，如果没有就会被销毁，最终线程数量会减为 0。
 
+# ScheduledThreadPool
 
-## 第三种：ScheduledThreadPool
+支持定时或周期性执行任务。比如每隔 10 秒钟执行一次任务，而实现这种功能的方法主要有 3 种，如下代码所示：
+```java
+ScheduledExecutorService service = Executors.newScheduledThreadPool(10);
+service.schedule(new Task(), 10, TimeUnit.SECONDS);
+service.scheduleAtFixedRate(new Task(), 10, 10, TimeUnit.SECONDS);
+service.scheduleWithFixedDelay(new Task(), 10, 10, TimeUnit.SECONDS);
+```
+这三种方法的区别如下：
+1. 第一种方法， schedule 比较简单，表示延迟指定时间后执行一次任务，如果代码中设置参数为 10 秒，也就是 10 秒后执行一次任务后就结束。
+2. 第二种方法， scheduleAtFixedRate 表示以固定的频率执行任务，它的第二个参数 initialDelay 表示第一次延时时间，第三个参数 period 表示周期，也就是第一次延时后每次延时多长时间执行一次任务。
+3. 第三种方法， scheduleWithFixedDelay 与第二种方法类似，也是周期执行任务，区别在于对周期的定义，之前的 scheduleAtFixedRate 是以任务开始的时间为时间起点开始计时，时间到就开始执行第二次任务，而不管任务需要花多久执行；而 scheduleWithFixedDelay 方法以任务结束的时间为下一次循环的时间起点开始计时。
 
-- 支持定时或周期性执行任务。比如每隔 10 秒钟执行一次任务，而实现这种功能的方法主要有 3 种，如代码所示：
-
-  ```java
-  ScheduledExecutorService service = Executors.newScheduledThreadPool(10);
-  service.schedule(new Task(), 10, TimeUnit.SECONDS);
-  service.scheduleAtFixedRate(new Task(), 10, 10, TimeUnit.SECONDS);
-  service.scheduleWithFixedDelay(new Task(), 10, 10, TimeUnit.SECONDS);
-  ```
-
-  这三种方法的区别如下：
-
-  1. 第一种方法 schedule 比较简单，表示延迟指定时间后执行一次任务，如果代码中设置参数为 10 秒，也就是 10 秒后执行一次任务后就结束。
-  2. 第二种方法 scheduleAtFixedRate 表示以固定的频率执行任务，它的第二个参数 initialDelay 表示第一次延时时间，第三个参数 period 表示周期，也就是第一次延时后每次延时多长时间执行一次任务。
-  3. 第三种方法 scheduleWithFixedDelay 与第二种方法类似，也是周期执行任务，区别在于对周期的定义，之前的 scheduleAtFixedRate 是以任务开始的时间为时间起点开始计时，时间到就开始执行第二次任务，而不管任务需要花多久执行；而 scheduleWithFixedDelay 方法以任务结束的时间为下一次循环的时间起点开始计时。
-
-  举个例子，假设某个同学正在熬夜写代码，需要喝咖啡来提神，假设每次喝咖啡都需要花10分钟的时间，如果此时采用第2种方法 scheduleAtFixedRate，时间间隔设置为 1 小时，那么他将会在每个整点喝一杯咖啡，以下是时间表：
+举个例子，假设某个同学正在熬夜写代码，需要喝咖啡来提神，假设每次喝咖啡都需要花10分钟的时间，如果此时采用第 2 种方法 scheduleAtFixedRate，时间间隔设置为 1 小时，那么他将会在每个整点喝一杯咖啡，以下是时间表：
 
   - 00:00 - 开始喝咖啡
   - 00:10 - 喝完了
@@ -83,7 +78,7 @@ ExecutorService service = Executors.newCachedThreadPool();
   - 02:00 - 开始喝咖啡
   - 02:10 - 喝完了
 
-  但是假设他采用第3种方法 scheduleWithFixedDelay，时间间隔同样设置为 1 小时，那么由于每次喝咖啡需要10分钟，而 scheduleWithFixedDelay 是以任务完成的时间为时间起点开始计时的，所以第2次喝咖啡的时间将会在1:10，而不是1:00整，以下是时间表：
+但是假设他采用第3种方法 scheduleWithFixedDelay，时间间隔同样设置为 1 小时，那么由于每次喝咖啡需要10分钟，而 scheduleWithFixedDelay 是以任务完成的时间为时间起点开始计时的，所以第2次喝咖啡的时间将会在1:10，而不是1:00整，以下是时间表：
 
   - 00:00: 开始喝咖啡
   - 00:10: 喝完了
@@ -92,15 +87,15 @@ ExecutorService service = Executors.newCachedThreadPool();
   - 02:20: 开始喝咖啡
   - 02:30: 喝完了
 
-## 第四种：SingleThreadExecutor
+# SingleThreadExecutor
 
 该线程池会使用唯一的线程去执行任务，原理和 FixedThreadPool 是一样的，只不过这里线程只有一个，如果线程在执行任务的过程中发生异常，线程池也会重新创建一个线程来执行后续的任务。这种线程池由于只有一个线程，所以非常适合用于所有任务都需要按被提交的顺序依次执行的场景，而前几种线程池不一定能够保障任务的执行顺序等于被提交的顺序，因为它们是多线程并行执行的。
 
 
 
-## 第五种：SingleThreadScheduledExecutor
+## ingleThreadScheduledExecutor
 
-第五个线程池是 SingleThreadScheduledExecutor，它实际和第三种 ScheduledThreadPool 线程池非常相似，它只是 ScheduledThreadPool 的一个特例，内部只有一个线程，如源码所示：
+第五个线程池是 SingleThreadScheduledExecutor，它和第三种 ScheduledThreadPool 线程池非常相似，是 ScheduledThreadPool 的一个特例，内部只有一个线程，如源码所示：
 
 ```bash
 new ScheduledThreadPoolExecutor(1)
@@ -115,9 +110,7 @@ new ScheduledThreadPoolExecutor(1)
 | keepAliveTime |        0        |       60 秒       |          0          |          0           |               0               |
 
 总结上述的五种线程池，以核心线程数 corePoolSize、最大线程数 maxPoolSize，以及线程存活时间 keepAliveTime 三个维度进行对比，如表格所示。
-
 - 第一个线程池 FixedThreadPool，它的核心线程数和最大线程数都是由构造函数直接传参的，而且它们的值是相等的，所以最大线程数不会超过核心线程数，也就不需要考虑线程回收的问题，如果没有任务可执行，线程仍会在线程池中存活并等待任务。
-
 - 第二个线程池 CachedThreadPool 的核心线程数是 0，而它的最大线程数是 Integer 的最大值，线程数一般是达不到这么多的，所以如果任务特别多且耗时的话，CachedThreadPool 就会创建非常多的线程来应对。
 
 ## 第六种：ForkJoinPool
@@ -243,4 +236,4 @@ ForkJoinPool 线程池内部除了有一个共用的任务队列之外，每个�
 
 
 
-> 看了上面得表格,maxPoolSize值为1、corePoolSize或Integer.MAX_VALUE。那什么场景下会出现其他值呢 —— 自己定义线程池时，可以对该值进行其他值的设置。
+> 看了上面得表格,maxPoolSize 值为 1、corePoolSize 或 Integer.MAX_VALUE。那什么场景下会出现其他值呢 —— 自己定义线程池时，可以对该值进行其他值的设置。
