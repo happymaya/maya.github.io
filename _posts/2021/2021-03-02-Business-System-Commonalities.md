@@ -1,5 +1,5 @@
 ---
-title:  业务系统的共性总结
+title: 后端业务系统的共性总结
 author:
   name: superhsc
   link: https://github.com/happymaya
