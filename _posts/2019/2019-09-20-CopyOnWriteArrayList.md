@@ -1,16 +1,18 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: CopyOnWriteArrayList 的优点
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-09-20 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
 
-在 CopyOnWriteArrayList 出现之前，已经有了 ArrayList 和 LinkedList 作为 List 的数组和链表的实现，而且也有了线程安全的 Vector 和 Collections.synchronizedList() 可以使用。所以首先就让我们来看下线程安全的 Vector 的 size 和 get 方法的代码：
+在 CopyOnWriteArrayList 出现之前，已经有了 ArrayList 和 LinkedList 作为 List 的数组和链表的实现，而且也有了线程安全的 Vector 和 Collections.synchronizedList() 可以使用。
+
+所以首先就看下线程安全的 Vector 的 size 和 get 方法的代码：
 
 ```java
 public synchronized int size() {
@@ -63,11 +65,11 @@ CopyOnWriteArrayList 的所有修改操作（add，set等）都是通过创建�
 
 - **迭代期间允许修改集合内容**
 
-我们知道 ArrayList 在迭代期间如果修改集合的内容，会抛出 ConcurrentModificationException 异常。让我们来分析一下 ArrayList 会抛出异常的原因。
+ ArrayList 在迭代期间如果修改集合的内容，会抛出 ConcurrentModificationException 异常。让我们来分析一下 ArrayList 会抛出异常的原因。
 
 在 ArrayList 源码里的 ListItr 的 next 方法中有一个 checkForComodification 方法，代码如下：
 
-```
+```java
 final void checkForComodification() {
     if (modCount != expectedModCount)
         throw new ConcurrentModificationException();
@@ -78,7 +80,7 @@ final void checkForComodification() {
 
 和 ArrayList 不同的是，CopyOnWriteArrayList 的迭代器在迭代的时候，如果数组内容被修改了，CopyOnWriteArrayList 不会报 ConcurrentModificationException 的异常，因为迭代器使用的依然是旧数组，只不过迭代的内容可能已经过时了。演示代码如下：
 
-```
+```java
 /**
 * 描述： 演示CopyOnWriteArrayList迭代期间可以修改集合的内容
 */
@@ -149,7 +151,7 @@ public class CopyOnWriteArrayListDemo {
 
 - **数据结构**
 
-```
+```java
 /** 可重入锁对象 */
 
 final transient ReentrantLock lock = new ReentrantLock();
@@ -263,7 +265,7 @@ public E next() {
 
 在 next 方法中可以看到，返回的内容是 snapshot 对象，所以，后续就算原数组被修改，这个 snapshot 既不会感知到，也不会受影响，执行迭代操作不需要加锁，也不会因此抛出异常。迭代器返回的结果，和创建迭代器的时候的内容一致。
 
-以上我们对 CopyOnWriteArrayList 进行了介绍。我们分别介绍了在它诞生之前的 Vector 和 Collections.synchronizedList() 的特点，CopyOnWriteArrayList 的适用场景、读写规则，还介绍了它的两个特点，分别是写时复制和迭代期间允许修改集合内容。我们还介绍了它的三个缺点，分别是内存占用问题，在元素较多或者复杂的情况下复制的开销大问题，以及数据一致性问题。最后我们对于它的重要源码进行了解析。
+分别介绍了在它诞生之前的 Vector 和 Collections.synchronizedList() 的特点，CopyOnWriteArrayList 的适用场景、读写规则，还介绍了它的两个特点，分别是写时复制和迭代期间允许修改集合内容。我们还介绍了它的三个缺点，分别是内存占用问题，在元素较多或者复杂的情况下复制的开销大问题，以及数据一致性问题。最后我们对于它的重要源码进行了解析。
 
 
 

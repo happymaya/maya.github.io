@@ -1,5 +1,5 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 阻塞队列的常用方法以及区别
 author:
   name: superhsc
   link: https://github.com/happymaya
@@ -9,9 +9,9 @@ tags: [thread]
 math: true
 mermaid: true
 ---
-在阻塞队列中有很多方法，而且它们都非常相似，所以非常有必要对这些类似的方法进行辨析，所以本课时会用分类的方式，和你一起，把阻塞队列中常见的方法进行梳理和讲解。
+在阻塞队列中有很多方法，而且它们都非常相似，所以非常有必要对这些类似的方法进行辨析。
 
-我们把 BlockingQueue 中最常用的和添加、删除相关的 8 个方法列出来，并且把它们分为三组，每组方法都和添加、移除元素相关。
+把 BlockingQueue 中最常用的和添加、删除相关的 8 个方法列出来，并且把它们分为三组，每组方法都和添加、移除元素相关。
 
 这三组方法由于功能很类似，所以比较容易混淆。它们的区别仅在于特殊情况：当队列满了无法添加元素，或者是队列空了无法移除元素时，不同组的方法对于这种特殊情况会有不同的处理方式：
 
@@ -115,7 +115,7 @@ false
 
 poll 方法和第一组的 remove 方法是对应的，作用也是移除并返回队列的头节点。但是如果当队列里面是空的，没有任何东西可以移除的时候，便会返回 null 作为提示。正因如此，我们是不允许往队列中插入 null 的，否则我们没有办法区分返回的 null 是一个提示还是一个真正的元素。示例代码如下：
 
-```
+```java
 private static void pollTest() {
     ArrayBlockingQueue<Integer> blockingQueue = new ArrayBlockingQueue<Integer>(3);
     blockingQueue.offer(1);
@@ -200,9 +200,5 @@ take 方法的作用是获取并移除队列的头结点。通常在队列里有
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-take.png)
 
 ### 总结
-
-以上就是本课时的内容，本课时我们讲解了阻塞队列中常见的方法并且把它们分为了三组，每一组都有各自的特点。第一组的特点是在无法正常执行的情况下抛出异常；第二组的特点是在无法正常执行的情况下不抛出异常，但会用返回值提示运行失败；第三组的特点是在遇到特殊情况时让线程陷入阻塞状态，等到可以运行再继续执行。
-
-我们用表格把上面 8 种方法总结如下：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-table.png)
