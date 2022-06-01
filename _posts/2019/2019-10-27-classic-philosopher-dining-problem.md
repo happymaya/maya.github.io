@@ -1,21 +1,17 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 哲学家就餐问题
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-27 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-# 第71讲：讲一讲经典的哲学家就餐问题
+# 问题描述
 
-本课时我们介绍经典的哲学家就餐问题。
-
-### 问题描述
-
-哲学家就餐问题也被称为刀叉问题，或者吃面问题。我们先来描述一下这个问题所要说明的事情，这个问题如下图所示：
+哲学家就餐问题也被称为刀叉问题，或者吃面问题。这个问题如下图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-71-1.png)
 

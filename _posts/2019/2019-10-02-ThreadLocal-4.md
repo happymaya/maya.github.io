@@ -1,15 +1,15 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 每次用完 ThreadLocal 一定要 remove()
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-03 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-### 什么是内存泄漏
+# 什么是内存泄漏
 
 内存泄漏指的是，当某一个对象不再有用的时候，占用的内存却不能被回收，这就叫作**内存泄漏**。
 
@@ -17,7 +17,7 @@ mermaid: true
 
 下面我们来分析一下，在 ThreadLocal 中这样的内存泄漏是如何发生的。
 
-#### Key 的泄漏
+## Key 的泄漏
 
 在上一讲中，我们分析了 ThreadLocal 的内部结构，知道了每一个 Thread 都有一个 ThreadLocal.ThreadLocalMap 这样的类型变量，该变量的名字叫作 threadLocals。线程在访问了 ThreadLocal 之后，都会在它的 ThreadLocalMap 里面的 Entry 中去维护该 ThreadLocal 变量与具体实例的映射。
 
@@ -27,7 +27,7 @@ GC 在垃圾回收的时候会进行可达性分析，它会发现这个 ThreadL
 
 JDK 开发者考虑到了这一点，所以 ThreadLocalMap 中的 Entry 继承了 WeakReference 弱引用，代码如下所示：
 
-```
+```java
 static class Entry extends WeakReference<ThreadLocal<?>> {
 
     /** The value associated with this ThreadLocal. */
@@ -56,7 +56,7 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 
 可是，如果我们继续研究的话会发现，虽然 ThreadLocalMap 的每个 Entry 都是一个对 key 的弱引用，但是这个 Entry 包含了一个对 value 的强引用，还是刚才那段代码：
 
-```
+```java
 static class Entry extends WeakReference<ThreadLocal<?>> {
 
     /** The value associated with this ThreadLocal. */

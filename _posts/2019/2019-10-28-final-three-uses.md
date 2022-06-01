@@ -253,57 +253,29 @@ public class ThreeUsesOfFinal {
 
 这个要求和方法中的非 final 变量的要求也是一样的，对于方法中的一个非 final 修饰的普通变量而言，它其实也是要求在使用这个变量之前对它赋值。我们来看下面这个代码的例子：
 
-```
+```java
 /**
-
  * 描述：     本地变量的赋值时机：使用前赋值即可
-
  */
-
 public class LocalVarAssignment1 {
-
-
-
     public void foo() {
-
         final int a = 0;//等号右边直接赋值
-
     }
-
 }
-
-
 
 class LocalVarAssignment2 {
-
-
-
     public void foo() {
-
         final int a;//这是允许的，因为a没有被使用
-
     }
-
 }
-
-
 
 class LocalVarAssignment3 {
-
-
-
     public void foo() {
-
         final int a;
-
         a = 0;//使用前赋值
-
         System.out.println(a);
-
     }
-
 }
-
 ```
 
 首先我们来看下第一个类，即 LocalVarAssignment1，然后在 foo() 方法中有一个 final 修饰的 int a，最后这里直接在等号右边赋值。

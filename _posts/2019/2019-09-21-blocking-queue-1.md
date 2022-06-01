@@ -1,5 +1,5 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 阻塞队列
 author:
   name: superhsc
   link: https://github.com/happymaya
@@ -9,9 +9,7 @@ tags: [thread]
 math: true
 mermaid: true
 ---
-### 34 阻塞队列
-
-### 阻塞队列的作用
+# 阻塞队列的作用
 
 阻塞队列，也就是 BlockingQueue，它是一个接口，如代码所示：
 
@@ -35,7 +33,7 @@ BlockingQueue 是线程安全的，我们在很多场景下都可以利用线程
 
 
 
-### 主要并发队列关系图
+# 主要并发队列关系图
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-class.png)
 
@@ -57,19 +55,19 @@ Deque 的意思是双端队列，音标是 [dek]，是 double-ended-queue 的缩
 
 
 
-### 阻塞队列的特点
+# 阻塞队列的特点
 
 阻塞队列区别于其他类型的队列的最主要的特点就是“阻塞”这两个字，所以下面重点介绍阻塞功能：阻塞功能使得生产者和消费者两端的能力得以平衡，当有任何一端速度过快时，阻塞队列便会把过快的速度给降下来。实现阻塞最重要的两个方法是 take 方法和 put 方法。
 
 
 
-#### take 方法
+## take 方法
 
 take 方法的功能是获取并移除队列的头结点，通常在队列里有数据的时候是可以正常移除的。可是一旦执行 take 方法的时候，队列里无数据，则阻塞，直到队列里有数据。一旦队列里有数据了，就会立刻解除阻塞状态，并且取到数据。过程如图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-take.png)
 
-#### put 方法
+## put 方法
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-blockingqueue-put.png)
 
@@ -77,7 +75,7 @@ take 方法的功能是获取并移除队列的头结点，通常在队列里有
 
 
 
-#### 是否有界（容量有多大）
+## 是否有界（容量有多大）
 
 此外，阻塞队列还有一个非常重要的属性，那就是容量的大小，分为有界和无界两种。
 

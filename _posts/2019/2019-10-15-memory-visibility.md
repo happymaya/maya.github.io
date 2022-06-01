@@ -1,23 +1,21 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 内存可见性
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-15 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-本课时我们主要讲解什么是“可见性”问题？
 
-我们先从两个案例来入手，看一看什么是可见性问题。
 
-### 案例一
+# 案例一
 
 我们来看看下面的代码，有一个变量 x，它是 int 类型的，如下所示：
 
-```
+```java
 public class Visibility {
     int x = 0;
 
@@ -45,105 +43,58 @@ public class Visibility {
 
 那么，假设线程 1 的工作内存还未同步给主内存，此时假设线程 2 开始读取，那么它读到的 x 值不是 1，而是 0，也就是说虽然此时线程 1 已经把 x 的值改动了，但是对于第 2 个线程而言，根本感知不到 x 的这个变化，这就产生了可见性问题。
 
-### 案例二
+# 案例二
 
-下面我们再来看一个案例。在如下所示的代码中，有两个变量 a 和 b， 并且把它们赋初始值为 10 和 20。
+在如下所示的代码中，有两个变量 a 和 b， 并且把它们赋初始值为 10 和 20。
 
-```
+```java
 /**
-
  * 描述：     演示可见性带来的问题
-
  */
-
 public class VisibilityProblem {
 
-
-
     int a = 10;
-
     int b = 20;
 
-
-
     private void change() {
-
         a = 30;
-
         b = a;
-
     }
-
-
-
 
 
     private void print() {
-
         System.out.println("b=" + b + ";a=" + a);
-
     }
-
-
 
     public static void main(String[] args) {
-
         while (true) {
-
             VisibilityProblem problem = new VisibilityProblem();
-
             new Thread(new Runnable() {
-
                 @Override
-
                 public void run() {
-
                     try {
-
                         Thread.sleep(1);
-
                     } catch (InterruptedException e) {
-
                         e.printStackTrace();
-
                     }
-
                     problem.change();
-
                 }
-
             }).start();
-
-
 
             new Thread(new Runnable() {
-
                 @Override
-
                 public void run() {
-
                     try {
-
                         Thread.sleep(1);
-
                     } catch (InterruptedException e) {
-
                         e.printStackTrace();
-
                     }
-
                     problem.print();
-
                 }
-
             }).start();
-
         }
-
     }
-
 }
-
 ```
 
 在类中，有两个方法：
@@ -181,10 +132,8 @@ public class VisibilityProblem {
 
 #### synchronized 不仅保证了原子性，还保证了可见性
 
-下面我们再来分析一下之前所使用过的 synchronized 关键字，在理解了可见性问题之后，相信你对 synchronized 的理解会更加深入。
+下面再来分析一下之前所使用过的 synchronized 关键字，在理解了可见性问题之后，相信你对 synchronized 的理解会更加深入。
 
 关于 synchronized 这里有一个特别值得说的点，我们之前可能一致认为，使用了 synchronized 之后，它会设立一个临界区，这样在一个线程操作临界区内的数据的时候，另一个线程无法进来同时操作，所以保证了线程安全。
 
 其实这是不全面的，这种说法没有考虑到可见性问题，完整的说法是：synchronized 不仅保证了临界区内最多同时只有一个线程执行操作，同时还保证了在前一个线程释放锁之后，之前所做的所有修改，都能被获得同一个锁的下一个线程所看到，也就是能读取到最新的值。因为如果其他线程看不到之前所做的修改，依然也会发生线程安全问题。
-
-以上就是本课时的内容了。在本课时中，我们首先给出了两个具体案例来介绍什么是可见性问题；然后介绍了解决可见性问题的方法，最常用的就是使用 volatile 关键字；最后我们对 synchronized 的理解从可见性的层面上加深了一步。

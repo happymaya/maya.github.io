@@ -1,5 +1,5 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: Callable？Runnable 的缺陷
 author:
   name: superhsc
   link: https://github.com/happymaya
@@ -9,7 +9,6 @@ tags: [thread]
 math: true
 mermaid: true
 ---
-### 为什么需要 Callable？Runnable 的缺陷
 
 先来看一下，为什么需要 Callable？要想回答这个问题，我们先来看看现有的 Runnable 有哪些缺陷？
 

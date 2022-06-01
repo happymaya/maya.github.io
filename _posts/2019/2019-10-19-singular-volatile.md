@@ -1,25 +1,25 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 单例模式的双重检查锁模式为什么必须加 volatile
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-19 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-### 什么是单例模式
+# 什么是单例模式
 
 单例模式指的是，保证一个类只有一个实例，并且提供一个可以全局访问的入口。
 
-#### 为什么需要使用单例模式
+## 为什么需要使用单例模式
 
-那么我们为什么需要单例呢？其中**一个理由，那就是为了节省内存、节省计算。**因为在很多情况下，我们只需要一个实例就够了，如果出现更多的实例，反而纯属浪费。
+那么我们为什么需要单例呢？其中**一个理由，那就是为了节省内存、节省计算**。在很多情况下，只需要一个实例就够了，如果出现更多的实例，反而纯属浪费。
 
-下面我们举一个例子来说明这个情况，以一个初始化比较耗时的类来说，代码如下所示：
+举一个例子来说明这个情况，以一个初始化比较耗时的类来说，代码如下所示：
 
-```
+```java
 public class ExpensiveResource {
 
     public ExpensiveResource() {
@@ -48,9 +48,9 @@ public class ExpensiveResource {
 
 #### 双重检查锁模式的写法
 
-单例模式有多种写法，我们重点介绍一下和 volatile 强相关的双重检查锁模式的写法，代码如下所示：
+单例模式有多种写法，本文重点关注使用 volatile 强相关的双重检查锁模式的写法，代码如下所示：
 
-```
+```java
 public class Singleton {
     private static volatile Singleton singleton;
 
@@ -76,7 +76,7 @@ public class Singleton {
 
 这种写法的优点是不仅线程安全，而且延迟加载、效率也更高。
 
-**讲到这里就涉及到了一个常见的问题，面试官可能会问你，“为什么要 double-check？去掉任何一次的 check 行不行？”**
+**这里就涉及到了一个常见的问题，面试官可能会问你，“为什么要 double-check？去掉任何一次的 check 行不行？”**
 
 我们先来看第二次的 check，这时你需要考虑这样一种情况，有两个线程同时调用 getInstance 方法，由于 singleton 是空的 ，因此两个线程都可以通过第一重的 if 判断；然后由于锁机制的存在，会有一个线程先进入同步语句，并进入第二重 if 判断 ，而另外的一个线程就会在外面等待。
 
@@ -84,7 +84,7 @@ public class Singleton {
 
 而对于第一个 check 而言，如果去掉它，那么所有线程都会串行执行，效率低下，所以两个 check 都是需要保留的。
 
-#### 在双重检查锁模式中为什么需要使用 volatile 关键字
+## 在双重检查锁模式中为什么需要使用 volatile 关键字
 
 相信细心的你可能看到了，我们在双重检查锁模式中，给 singleton 这个对象加了 volatile 关键字，那**为什么要用 volatile 呢？**主要就在于 singleton = new Singleton() ，它并非是一个原子操作，事实上，在 JVM 中上述语句至少做了以下这 3 件事：
 
@@ -106,42 +106,11 @@ public class Singleton {
 
 使用了 volatile 之后，相当于是表明了该字段的更新可能是在其他线程中发生的，因此应确保在读取另一个线程写入的值时，可以顺利执行接下来所需的操作。在 JDK 5 以及后续版本所使用的 JMM 中，在使用了 volatile 后，会一定程度禁止相关语句的重排序，从而避免了上述由于重排序所导致的读取到不完整对象的问题的发生。
 
-到这里关于“为什么要用 volatile” 的问题就讲完了，使用 volatile 的意义主要在于它可以防止避免拿到没完成初始化的对象，从而保证了线程安全。
+使用 volatile 的意义主要在于它可以防止避免拿到没完成初始化的对象，从而保证了线程安全。
 
-### 总结
-
-在本课时中我们首先介绍了什么是单例模式，以及为什么需要使用单例模式，然后介绍了双重检查锁模式这种写法，以及面对这种写法时为什么需要 double-check，为什么需要用 volatile？最主要的是为了保证线程安全。
 
 > 参考：
 > 小宝马的爸爸 - 梦想的家园《单例模式（Singleton）》：https://www.cnblogs.com/BoyXiao/archive/2010/05/07/1729376.html
 > Jark's Blog《如何正确地写出单例模式》：http://wuchong.me/blog/2014/08/28/how-to-correctly-write-singleton-pattern/
 > Hollis Chuang《为什么我墙裂建议大家使用枚举来实现单例》：https://www.hollischuang.com/archives/2498
 > Hollis Chuang《深度分析Java的枚举类型—-枚举的线程安全性及序列化问题》：https://www.hollischuang.com/archives/197
-
-
-
-> 老师，我这里有一点点不明白，就是`singleton = new Singleton()`会拆分成3条语句，但他毕竟在synchronized同步代码块中，为什么这三条语句不是全部执行完毕之后就会退出，而是只执行了前两步就退出，另一个线程就进来了呢，那synchronized的意义在哪里呢？是不是我对synchronized的理解不对呢？ —— 注意时机，第一个线程执行了前两步后，并没有退出synchronized，就在此时，第二个线程进来了，而不是第一个线程已经退出了synchronized代码块，就会发生课程里讲的线程安全问题。
-
-
-
-> synchronized同步块可以禁止指令重排序，是指同步块的内容相对于同步块之外的代码可以保证不会重排序，但其实同步块里面还是会重排序嘛 —— 是的
-
-
-
-> Sync代码块不是也能禁止重排序吗 ？为什么代码块中的实例化对象居然还会发生重排序问题？ ——  重排序发生在：第二个线程并没有进入到锁保护的同步块，只是进入了第一层if判断。第一个线程退出synchronized之前，无法保证可见性。
-
-
-
-> new Singleton()发生在synchronized中，为什么第一个线程三条指令还没执行完第二个线程就能进来？—— 第二个线程并没有进入synchronized，第二个线程在第一层if时会判断!=null然后跳过synchronized。
-
-
-
-> 第二步调用构造函数初始化single，是不是可以理解为对分配的内存空间进行赋值操作？让内存空间有数据 —— 可以
-
-
-
-> synchronized 可以保证可见性，singleton = new Singleton() 执行对于第二个线程应该是可见的，第二个线程应该能看到new Singleton()的对象。 ——  第二个线程并没有进入到锁保护的同步块，只是进入了第一层if判断。第一个线程退出synchronized之前，无法保证可见性。
-
-
-
-> 如果第一个线程正在执行syn块内，此时另一个线程刚到第一个if判断，是有可见性问题，那等第一个线程执行完成，第二个线程进入第二个if判断，会有问题吗？ ——  第一个线程如果在syn块内，就不能保证其他线程没有可见性问题。执行完后，可以保证可见性。

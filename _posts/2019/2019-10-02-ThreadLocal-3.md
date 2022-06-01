@@ -1,19 +1,15 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: Thread、 ThreadLocal 及 ThreadLocalMap 三者之间的关系
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-09-14 15:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-# Thread、 ThreadLocal 及 ThreadLocalMap 三者之间的关系
-
-在讲解本课时之前，先要搞清楚 Thread、 ThreadLocal 及 ThreadLocalMap 三者之间的关系。我们用最直观、最容易理解的图画的方式来看看它们三者的关系：
-
-
+最直观、最容易理解的图画的方式来看看它们三者的关系：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-threadlocal-thread_threadLocal_threadLocalMap.png)
 
@@ -35,7 +31,7 @@ mermaid: true
 
 首先我们来看一下 get 方法，源码如下所示：
 
-```
+```java
 public T get() {
 
     //获取到当前线程
@@ -82,7 +78,7 @@ public T get() {
 
 下面我们来看一下 getMap 方法，源码如下所示：
 
-```
+```java
 ThreadLocalMap getMap(Thread t) {
 
     return t.threadLocals;
@@ -103,7 +99,7 @@ ThreadLocal.ThreadLocalMap threadLocals = null;
 
 下面我们再来看一下 set 方法，源码如下所示：
 
-```
+```java
 public void set(T value) {
 
     Thread t = Thread.currentThread();
@@ -130,7 +126,7 @@ set 方法的作用是把我们想要存储的 value 给保存进去。可以看
 
 下面我们来看一下 ThreadLocalMap 这个类，下面这段代码截取自定义在 ThreadLocal 类中的 ThreadLocalMap 类：
 
-```
+```java
 static class ThreadLocalMap {
 
 
@@ -175,10 +171,9 @@ ThreadLocalMap 既然类似于 Map，所以就和 HashMap 一样，也会有包�
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-threadlocal-thread_threadLocal_threadLocalMap_1.png)
 
 但是 ThreadLocalMap 解决 hash 冲突的方式是不一样的，它采用的是线性探测法。如果发生冲突，并不会用链表的形式往下链，而是会继续寻找下一个空的格子。这是 ThreadLocalMap 和 HashMap 在处理冲突时不一样的点。
+# 总结
 
-以上就是本节课的内容。
-
-在本节课中，我们主要分析了 Thread、 ThreadLocal 和 ThreadLocalMap 这三个非常重要的类的关系。用图画的方式表明了它们之间的关系：一个 Thread 有一个 ThreadLocalMap，而 ThreadLocalMap 的 key 就是一个个的 ThreadLocal，它们就是用这样的关系来存储并维护内容的。之后我们对于 ThreadLocal 的一些重要方法进行了源码分析。
+一个 Thread 有一个 ThreadLocalMap，而 ThreadLocalMap 的 key 就是一个个的 ThreadLocal，它们就是用这样的关系来存储并维护内容的。之后我们对于 ThreadLocal 的一些重要方法进行了源码分析。
 
 
 
