@@ -4,7 +4,7 @@ author:
   name: superhsc
   link: https://github.com/happymaya
 date: 2018-11-04 11:34:00 +0800
-categories: [Java, base]
+categories: [Java, Base]
 tags: [reflect, 反射]
 ---
 
