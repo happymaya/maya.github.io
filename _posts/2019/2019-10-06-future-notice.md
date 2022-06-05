@@ -1,15 +1,14 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: Future 的注意点
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-16 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-### Future 的注意点
 
 **1. 当 for 循环批量获取 Future 的结果时容易 block，get 方法调用时应使用 timeout 限制**
 
@@ -19,105 +18,54 @@ mermaid: true
 
 首先，假设一共有四个任务需要执行，我们都把它放到线程池中，然后它获取的时候是按照从 1 到 4 的顺序，也就是执行 get() 方法来获取的，代码如下所示：
 
-```
-public class FutureDemo {
-
-
-
-
-
-    public static void main(String[] args) {
-
-        //创建线程池
-
-        ExecutorService service = Executors.newFixedThreadPool(10);
-
-        //提交任务，并用 Future 接收返回结果
-
-        ArrayList<Future> allFutures = new ArrayList<>();
-
-        for (int i = 0; i < 4; i++) {
-
-            Future<String> future;
-
-            if (i == 0 || i == 1) {
-
-                future = service.submit(new SlowTask());
-
-            } else {
-
-                future = service.submit(new FastTask());
-
-            }
-
-            allFutures.add(future);
-
-        }
-
-
-
-        for (int i = 0; i < 4; i++) {
-
-            Future<String> future = allFutures.get(i);
-
-            try {
-
-                String result = future.get();
-
-                System.out.println(result);
-
-            } catch (InterruptedException e) {
-
-                e.printStackTrace();
-
-            } catch (ExecutionException e) {
-
-                e.printStackTrace();
-
-            }
-
-        }
-
-        service.shutdown();
-
-    }
-
-
-
-    static class SlowTask implements Callable<String> {
-
-
-
-        @Override
-
-        public String call() throws Exception {
-
-            Thread.sleep(5000);
-
-            return "速度慢的任务";
-
-        }
-
-    }
-
-
-
-    static class FastTask implements Callable<String> {
-
-
-
-        @Override
-
-        public String call() throws Exception {
-
-            return "速度快的任务";
-
-        }
-
-    }
-
+```java
+public class FutureDemo {
+  public static void main(String[] args) {
+    // 创建线程池
+    ExecutorService service = Executors.newFixedThreadPool(10);
+    
+    // 提交任务，并用 Future 接收返回结果
+    ArrayList<Future> allFutures = new ArrayList<>();
+    
+    for (int i = 0; i < 4; i++) {
+      Future<String> future;
+      if (i == 0 || i == 1) {
+        future = service.submit(new SlowTask());
+      } else {
+        future = service.submit(new FastTask());
+      }
+      allFutures.add(future);
+    }
+    
+    for (int i = 0; i < 4; i++) {
+      Future<String> future = allFutures.get(i);
+      try {
+        String result = future.get();
+        System.out.println(result);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+    }
+    service.shutdown();
+  }
+  
+  static class SlowTask implements Callable<String> {
+    @Override
+    public String call() throws Exception {
+      Thread.sleep(5000);
+      return "速度慢的任务";
+    }
+  }
+  
+  static class FastTask implements Callable<String> {
+    @Override
+    public String call() throws Exception {
+      return "速度快的任务";
+    }
+  }
 }
-
 ```
 
 可以看出，在代码中我们新建了线程池，并且用一个 list 来保存 4 个 Future。其中，前两个 Future 所对应的任务是慢任务，也就是代码下方的 SlowTask，而后两个 Future 对应的任务是快任务。慢任务在执行的时候需要 5 秒钟的时间才能执行完毕，而快任务很快就可以执行完毕，几乎不花费时间。
@@ -126,15 +74,11 @@ public class FutureDemo {
 
 执行结果如下：
 
-```
+```bash
 速度慢的任务
-
 速度慢的任务
-
 速度快的任务
-
 速度快的任务
-
 ```
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-future-2.png)
@@ -155,16 +99,13 @@ Future 的生命周期不能后退，一旦完成了任务，它就永久停在�
 
 这个图也是我们当时讲解所用的图，如果有些遗忘，可以回去复习一下当时的内容。这一讲，我推荐你采用看视频的方式，因为视频中会把各个路径都标明清楚，看起来会更加清晰。
 
-### Future 产生新的线程了吗
+## Future 产生新的线程了吗
 
-最后我们再来回答这个问题：Future 是否产生新的线程了？
+Future 是否产生新的线程了？
 
-有一种说法是，除了继承 Thread 类和实现 Runnable 接口之外，还有第三种产生新线程的方式，那就是采用 Callable 和 Future，这叫作有返回值的创建线程的方式。这种说法是不正确的。
+有一种说法是，除了继承 Thread 类和实现 Runnable 接口之外，还有第三种产生新线程的方式，那就是采用 Callable 和 Future，这叫作**有返回值的创建线程的方式。**这种说法是不正确的。
 
 其实 Callable 和 Future 本身并不能产生新的线程，它们需要借助其他的比如 Thread 类或者线程池才能执行任务。例如，在把 Callable 提交到线程池后，真正执行 Callable 的其实还是线程池中的线程，而线程池中的线程是由 ThreadFactory 产生的，这里产生的新线程与 Callable、Future 都没有关系，所以 Future 并没有产生新的线程。
-
-以上就是本讲的内容了。首先介绍了 Future 的两个注意点：第一个，在 get 的时候应当使用超时限制；第二个，Future 生命周期不能后退；然后又讲解了 Callable 和 Future 实际上并不是新建线程的第三种方式。
-
 
 
 > 通过submit(Callable)的方法产生的任务会进入ExecutorService的阻塞队列吗，如果进入了那么取消的话是直接从队列移除吗？—— 是会进入的，取消不会直接移除，而是等轮到执行的时候再根据状态来执行不同的策略。

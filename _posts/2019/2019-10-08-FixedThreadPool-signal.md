@@ -1,9 +1,9 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: Semaphore 信号量
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-08 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
@@ -11,9 +11,6 @@ mermaid: true
 ---
 控制并发流程的工具类，作用就是更容易地让线程之间相互配合，比如让线程 A 等待线程 B 执行完毕后再继续执行，来满足业务逻辑。本课时我们从 Semaphore（信号量）开始介绍。
 
-### Semaphore 信号量
-
-#### 介绍
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-semaphore.png)
 
@@ -21,13 +18,9 @@ mermaid: true
 
 同理，线程也可以“释放”一个许可证，如果线程释放了许可证，这个许可证相当于被归还给信号量了，于是信号量中的许可证的可用数量加一。当信号量拥有的许可证数量减到 0 时，如果下个线程还想要获得许可证，那么这个线程就必须等待，直到之前得到许可证的线程释放，它才能获取。由于线程在没有获取到许可证之前不能进一步去访问被保护的共享资源，所以这就控制了资源的并发访问量，这就是整体思路。
 
+## 应用实例、使用场景
 
-
-#### 应用实例、使用场景
-
-**背景**
-
-我们来看一个具体的场景：
+### 背景
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-semaphore-sence.png)
 
@@ -35,35 +28,34 @@ mermaid: true
 
 在讲解怎么做到这个事情之前，我们先来看一看，在通常的场景下，我们用一个普通线程池能不能做到这件事情。
 
-```
-public class SemaphoreDemo1 {
-    public static void main(String[] args) {
-        ExecutorService service = Executors.newFixedThreadPool(50);
-        for (int i = 0; i < 1000; i++) {
-            service.submit(new Task());
-        }
-        service.shutdown();
-    }
-
-    static class Task implements Runnable {
-
-        @Override
-        public void run() {
-            System.out.println(Thread.currentThread().getName() + "调用了慢服务");
-            try {
-                //模拟慢服务
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+```java
+public class SemaphoreDemo1 {
+  public static void main(String[] args) {
+    ExecutorService service = Executors.newFixedThreadPool(50);
+    for (int i = 0; i < 1000; i++) {
+      service.submit(new Task());
+    }
+    service.shutdown();
+  }
+  
+  static class Task implements Runnable {
+    @Override
+    public void run() {
+      System.out.println(Thread.currentThread().getName() + "调用了慢服务");
+      try {
+        // 模拟慢服务
+        Thread.sleep(3000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 }
 ```
 
 在这段代码中，有一个固定 50 个线程的线程池，然后给线程池提交 1000 个任务，并且每一个任务所执行的内容，就是去休眠 3 秒钟，来模拟调用这个慢服务的过程。我们启动这个程序，会发现打印出来的结果如下所示：
 
-```
+```bash
 pool-1-thread-2调用了慢服务
 pool-1-thread-4调用了慢服务
 pool-1-thread-3调用了慢服务
@@ -125,13 +117,9 @@ Thread 1 拿到许可证之后就拥有了访问慢服务的资格，它紧接�
 
 在这个例子中，线程 4 一开始获取许可证的时候被阻塞了，那个时候即使有线程 5 和线程 6 甚至线程 100 都来执行 acquire 方法的话，信号量也会把这些通通给阻塞住，这样就起到了信号量最主要的控制并发量的作用。
 
-#### 总结
+## 用法
 
-以上的过程，展示了如何利用信号量，去控制在同一时刻最多只有 3 个线程执行某任务的目的，那主要就是通过控制许可证的发放和归还的方式实现的。
-
-### 用法
-
-#### 使用流程
+### 使用流程
 
 讲完了场景之后，我们来看一下具体的用法，使用流程主要分为以下三步。
 
@@ -145,7 +133,7 @@ acquire() 和 acquireUninterruptibly() 的区别是：是否能响应中断。ac
 
 ### 其他主要方法介绍
 
-除了这几个主要方法以外，还有一些其他的方法，我再来介绍一下。
+除了这几个主要方法以外，还有一些其他的方法。
 
 **（1）public boolean tryAcquire()**
 
@@ -163,111 +151,71 @@ tryAcquire 和之前介绍锁的 trylock 思维是一致的，是尝试获取许
 
 下面我们来看一段示例代码：
 
-```
-public class SemaphoreDemo2 {
+```java
+public class SemaphoreDemo2 {
+  
+  static Semaphore semaphore = new Semaphore(3);
+  
+  public static void main(String[] args) {
+    ExecutorService service = Executors.newFixedThreadPool(50);
+    for (int i = 0; i < 1000; i++) {
+      service.submit(new Task());
+    }
+    service.shutdown();
+  }
+  
+  static class Task implements Runnable {
+    @Override
+    public void run() {
+      try {
+        semaphore.acquire();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      
+      System.out.println(Thread.currentThread().getName() + "拿到了许可证，花费2秒执行慢服务");
+      
+      try {
+        Thread.sleep(2000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      
+      System.out.println("慢服务执行完毕，" + Thread.currentThread().getName() + "释放了许可证");
+      
+      semaphore.release();
 
-
-
-    static Semaphore semaphore = new Semaphore(3);
-
-
-
-    public static void main(String[] args) {
-
-        ExecutorService service = Executors.newFixedThreadPool(50);
-
-        for (int i = 0; i < 1000; i++) {
-
-            service.submit(new Task());
-
-        }
-
-        service.shutdown();
-
-    }
-
-
-
-    static class Task implements Runnable {
-
-
-
-        @Override
-
-        public void run() {
-
-            try {
-
-                semaphore.acquire();
-
-            } catch (InterruptedException e) {
-
-                e.printStackTrace();
-
-            }
-
-            System.out.println(Thread.currentThread().getName() + "拿到了许可证，花费2秒执行慢服务");
-
-            try {
-
-                Thread.sleep(2000);
-
-            } catch (InterruptedException e) {
-
-                e.printStackTrace();
-
-            }
-
-            System.out.println("慢服务执行完毕，" + Thread.currentThread().getName() + "释放了许可证");
-
-            semaphore.release();
-
-        }
-
-    }
-
+    }
+  }
 }
-
 ```
 
 在这段代码中我们新建了一个数量为 3 的信号量，然后又有一个和之前一样的固定 50 线程的线程池，并且往里面放入 1000 个任务。每个任务在执行模拟慢服务之前，会先用信号量的 acquire 方法获取到信号量，然后再去执行这 2 秒钟的慢服务，最后利用 release() 方法来释放许可证。
 
 代码执行结果如下：
 
-```
-pool-1-thread-1拿到了许可证，花费2秒执行慢服务
+```bash
+pool-1-thread-1 拿到了许可证，花费 2 秒执行慢服务
+pool-1-thread-2 拿到了许可证，花费 2 秒执行慢服务
+pool-1-thread-3 拿到了许可证，花费 2 秒执行慢服务
+慢服务执行完毕，pool-1-thread-1 释放了许可证
+慢服务执行完毕，pool-1-thread-2 释放了许可证
+慢服务执行完毕，pool-1-thread-3 释放了许可证
 
-pool-1-thread-2拿到了许可证，花费2秒执行慢服务
-
-pool-1-thread-3拿到了许可证，花费2秒执行慢服务
-
-慢服务执行完毕，pool-1-thread-1释放了许可证
-
-慢服务执行完毕，pool-1-thread-2释放了许可证
-
-慢服务执行完毕，pool-1-thread-3释放了许可证
-
-pool-1-thread-4拿到了许可证，花费2秒执行慢服务
-
-pool-1-thread-5拿到了许可证，花费2秒执行慢服务
-
-pool-1-thread-6拿到了许可证，花费2秒执行慢服务
-
-慢服务执行完毕，pool-1-thread-4释放了许可证
-
-慢服务执行完毕，pool-1-thread-5释放了许可证
-
-慢服务执行完毕，pool-1-thread-6释放了许可证
-
+pool-1-thread-4 拿到了许可证，花费 2秒执行慢服务
+pool-1-thread-5 拿到了许可证，花费 2 秒执行慢服务
+pool-1-thread-6 拿到了许可证，花费 2 秒执行慢服务
+慢服务执行完毕，pool-1-thread-4 释放了许可证
+慢服务执行完毕，pool-1-thread-5 释放了许可证
+慢服务执行完毕，pool-1-thread-6 释放了许可证
 ...
-
 ```
 
 它会先让线程 1、2、3 拿到许可证，然后分别去执行这 2 秒钟的慢服务，直到执行完毕则会释放许可证，后面的线程才能进一步拿到许可证来执行服务。当前面 3 个线程还没有执行完毕，也就是还没有释放许可证的时候，后面的线程其实已经来请求了，它们也会尝试调用 acquire 方法，只不过这个时候会被阻塞住。通过执行结果可以看出，同时最多只有 3 个线程可以访问我们的慢服务。
 
-#### 特殊用法：一次性获取或释放多个许可证
+## 特殊用法：一次性获取或释放多个许可证
 
-我们再来介绍一下信号量的一种特殊用法，那就是它可以一次性释放或者获取多个许可证。
+信号量的一种特殊用法，那就是它可以一次性释放或者获取多个许可证。
 
 比如 semaphore.acquire(2)，里面传入参数 2，这就叫一次性获取两个许可证。同时释放也是一样的，semaphore.release(3) 相当于一次性释放三个许可证。
 
@@ -275,7 +223,7 @@ pool-1-thread-6拿到了许可证，花费2秒执行慢服务
 
 所以，我们就要求 Task A 在执行之前要一次性获取到 5 个许可证才能执行，而 Task B 只需要获取一个许可证就可以执行了。这样就避免了任务 A 和 B 同时运行，同时又很好的兼顾了效率，不至于同时只允许一个线程访问方法二，那样的话也存在浪费资源的情况，所以这就相当于我们可以根据自己的需求合理地利用信号量的许可证来分配资源。
 
-#### 注意点
+## 注意点
 
 信号量还有几个注意点：
 
@@ -283,22 +231,23 @@ pool-1-thread-6拿到了许可证，花费2秒执行慢服务
 - 在初始化的时候可以设置公平性，如果设置为 true 则会让它更公平，但如果设置为 false 则会让总的吞吐量更高。
 - 信号量是支持跨线程、跨线程池的，而且并不是哪个线程获得的许可证，就必须由这个线程去释放。事实上，对于获取和释放许可证的线程是没有要求的，比如线程 A 获取了然后由线程 B 释放，这完全是可以的，只要逻辑合理即可。
 
-### 信号量能被 FixedThreadPool 替代吗？
+## 信号量能被 FixedThreadPool 替代吗？
 
-让我们回到本课时的题目：信号量能不能被 FixedThreadPool 代替呢？这个问题相当于，信号量是可以限制同时访问的线程数，那为什么不直接用固定数量线程池去限制呢？这样不是更方便吗？比如说线程池里面有 3 个线程，那自然最多只有 3 个线程去访问了。
+信号量能不能被 FixedThreadPool 代替呢？这个问题相当于，信号量是可以限制同时访问的线程数，那为什么不直接用固定数量线程池去限制呢？这样不是更方便吗？比如说线程池里面有 3 个线程，那自然最多只有 3 个线程去访问了。
 
-这是一个很好的问题，我们在实际业务中会遇到这样的情况：假如，在调用慢服务之前需要有个判断条件，比如只想在每天的零点附近去访问这个慢服务时受到最大线程数的限制（比如 3 个线程），而在除了每天零点附近的其他大部分时间，我们是希望让更多的线程去访问的。所以在这种情况下就应该把线程池的线程数量设置为 50 ，甚至更多，然后在执行之前加一个 if 判断，如果符合时间限制了（比如零点附近），再用信号量去额外限制，这样做是比较合理的。
+这是一个很好的问题，在实际业务中会遇到这样的情况：假如，在调用慢服务之前需要有个判断条件，比如只想在每天的零点附近去访问这个慢服务时受到最大线程数的限制（比如 3 个线程），而在除了每天零点附近的其他大部分时间，是希望让更多的线程去访问的。所以在这种情况下就应该把线程池的线程数量设置为 50 ，甚至更多，然后在执行之前加一个 if 判断，如果符合时间限制了（比如零点附近），再用信号量去额外限制，这样做是比较合理的。
 
-再说一个例子，比如说在大型应用程序中会有不同类型的任务，它们也是通过不同的线程池来调用慢服务的。因为调用方不只是一处，可能是 Tomcat 服务器或者网关，我们就不应该限制，或者说也无法做到限制它们的线程池的大小。但可以做的是，在执行任务之前用信号量去限制一下同时访问的数量，因为我们的信号量具有跨线程、跨线程池的特性，所以即便这些请求来自于不同的线程池，我们也可以限制它们的访问。如果用 FixedThreadPool 去限制，那就做不到跨线程池限制了，这样的话会让功能大大削弱。
+再比如说在大型应用程序中会有不同类型的任务，它们也是通过不同的线程池来调用慢服务的。因为调用方不只是一处，可能是 Tomcat 服务器或者网关，就不应该限制，或者说也无法做到限制它们的线程池的大小。
+
+但可以做的是，在执行任务之前用信号量去限制一下同时访问的数量，因为我们的信号量具有跨线程、跨线程池的特性，所以即便这些请求来自于不同的线程池，也可以限制它们的访问。如果用 FixedThreadPool 去限制，那就做不到跨线程池限制了，这样的话会让功能大大削弱。
 
 基于以上的理由，如果想要限制并发访问的线程数，用信号量是更合适的。
-
 
 
 > 信号量的实际实现原理是一个计数器，一个等待队列，acquire是计数器减，release是计数器加，当减到0时再请求会进入等待队列阻塞。所以跨线程跨线程池是完全没问题的，只要操作的是同一个信号量对象！
 
 > 信号量有点类似于限流手段中的令牌桶算法
 
-> 为什么获取许可证的线程和释放许可证的线程可以允许不是同一个线程呢？线程A未获取许可证却归还许可证很怪
+> 为什么获取许可证的线程和释放许可证的线程可以允许不是同一个线程呢？ 线程 A 未获取许可证却归还许可证很怪
 
 > 信号量是用在慢服务中的业务代码中去控制 当前同时访问慢服务的 线程个数（请求数）。例如 微服务中的服务调用方， 服务提供方， 则信号量可用在服务提供方的业务代码中去实现一个限流处理？

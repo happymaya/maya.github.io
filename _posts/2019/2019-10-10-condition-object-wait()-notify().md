@@ -1,58 +1,46 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: Condition 接口
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-10-10 21:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-### Condition接口
 
-#### 作用
+### 作用
 
-我们假设线程 1 需要等待某些条件满足后，才能继续运行，这个条件会根据业务场景不同，有不同的可能性，比如等待某个时间点到达或者等待某些任务处理完毕。在这种情况下，我们就可以执行 Condition 的 await 方法，一旦执行了该方法，这个线程就会进入 WAITING 状态。
+假设线程 1 需要等待某些条件满足后，才能继续运行，这个条件会根据业务场景不同，有不同的可能性，比如等待某个时间点到达或者等待某些任务处理完毕。在这种情况下，我们就可以执行 Condition 的 await 方法，一旦执行了该方法，这个线程就会进入 WAITING 状态。
 
 通常会有另外一个线程，我们把它称作线程 2，它去达成对应的条件，直到这个条件达成之后，那么，线程 2 调用 Condition 的 signal 方法 [或 signalAll 方法]，代表“**这个条件已经达成了，之前等待这个条件的线程现在可以苏醒了**”。这个时候，JVM 就会找到等待该 Condition 的线程，并予以唤醒，根据调用的是 signal 方法或 signalAll 方法，会唤醒 1 个或所有的线程。于是，线程 1 在此时就会被唤醒，然后它的线程状态又会回到 Runnable 可执行状态。
 
-#### 代码案例
+#### 栗子
 
-我们用一个代码来说明这个问题，如下所示：
+用一个代码来说明这个问题，如下所示：
 
-```
-public class ConditionDemo {
-
-    private ReentrantLock lock = new ReentrantLock();
-
-    private Condition condition = lock.newCondition();
-
-
-
-    void method1() throws InterruptedException {
-
-        lock.lock();
-
-        try{
-
-            System.out.println(Thread.currentThread().getName()+":条件不满足，开始await");
-
-            condition.await();
-
-            System.out.println(Thread.currentThread().getName()+":条件满足了，开始执行后续的任务");
-
-        }finally {
-
-            lock.unlock();
-
-        }
-
-    }
-
-
-
-    void method2() throws InterruptedException {
+```java
+public class ConditionDemo {
+  
+  private ReentrantLock lock = new ReentrantLock();
+  
+  private Condition condition = lock.newCondition();
+  
+  void method1() throws InterruptedException {
+    
+    lock.lock();
+    
+    try {
+      System.out.println(Thread.currentThread().getName()+":条件不满足，开始await");
+      condition.await();
+      System.out.println(Thread.currentThread().getName()+":条件满足了，开始执行后续的任务");
+    } finally {
+      lock.unlock();
+    }
+  }
+  
+  void method2() throws InterruptedException {
 
         lock.lock();
 
@@ -103,9 +91,7 @@ public class ConditionDemo {
         conditionDemo.method1();
 
     }
-
 }
-
 ```
 
 在这个代码中，有以下三个方法。
@@ -116,15 +102,11 @@ public class ConditionDemo {
 
 最终这个代码程序运行结果如下所示：
 
-```
+```bash
 main:条件不满足，开始 await
-
 Thread-0:需要 5 秒钟的准备时间
-
 Thread-0:准备工作完成，唤醒其他的线程
-
 main:条件满足了，开始执行后续的任务
-
 ```
 
 同时也可以看到，打印这行语句它所运行的线程，第一行语句和第四行语句打印的是在 main 线程中，也就是在主线程中去打印的，而第二、第三行是在子线程中打印的。这个代码就模拟了我们前面所描述的场景。
@@ -149,87 +131,51 @@ signalAll() 会唤醒所有正在等待的线程，而 signal() 只会唤醒一�
 
 代码如下所示：
 
-```
-public class MyBlockingQueueForCondition {
+```java
+public class MyBlockingQueueForCondition {
+  
+  private Queue queue;
+  private int max = 16;
+  private ReentrantLock lock = new ReentrantLock();
+  
+  private Condition notEmpty = lock.newCondition();
+  private Condition notFull = lock.newCondition();
+  
+  
+  public MyBlockingQueueForCondition(int size) {
+    this.max = size;
+    queue = new LinkedList();
+  }
+  
+  public void put(Object o) throws InterruptedException {
+    lock.lock();
+    try {
+      while (queue.size() == max) {
+        notFull.await();
+      }
+      queue.add(o);
+      notEmpty.signalAll();
+    } finally {
+      lock.unlock();
+    }
+  }
+  
+  public Object take() throws InterruptedException {
+    lock.lock();
+    try {
+      while (queue.size() == 0) {
+        notEmpty.await();
+      }
+      
+      Object item = queue.remove();
+      notFull.signalAll();
+      return item;
 
- 
-
-   private Queue queue;
-
-   private int max = 16;
-
-   private ReentrantLock lock = new ReentrantLock();
-
-   private Condition notEmpty = lock.newCondition();
-
-   private Condition notFull = lock.newCondition();
-
- 
-
-   public MyBlockingQueueForCondition(int size) {
-
-       this.max = size;
-
-       queue = new LinkedList();
-
-   }
-
- 
-
-   public void put(Object o) throws InterruptedException {
-
-       lock.lock();
-
-       try {
-
-           while (queue.size() == max) {
-
-               notFull.await();
-
-           }
-
-           queue.add(o);
-
-           notEmpty.signalAll();
-
-       } finally {
-
-           lock.unlock();
-
-       }
-
-   }
-
- 
-
-   public Object take() throws InterruptedException {
-
-       lock.lock();
-
-       try {
-
-           while (queue.size() == 0) {
-
-               notEmpty.await();
-
-           }
-
-           Object item = queue.remove();
-
-           notFull.signalAll();
-
-           return item;
-
-       } finally {
-
-           lock.unlock();
-
-       }
-
-   }
-
+    } finally {
+      lock.unlock();
+    }
+  }
 }
-
 ```
 
 在上面的代码中，首先定义了一个队列变量 queue，其最大容量是 16；然后定义了一个 ReentrantLock 类型的 Lock 锁，并在 Lock 锁的基础上创建了两个 Condition，一个是 notEmpty，另一个是 notFull，分别代表队列没有空和没有满的条件；最后，声明了 put 和 take 这两个核心方法。
@@ -238,59 +184,35 @@ public class MyBlockingQueueForCondition {
 
 我们再来看看如何使用 wait/notify 来实现简易版阻塞队列，代码如下：
 
-```
+```java
 class MyBlockingQueueForWaitNotify {
-
- 
-
-   private int maxSize;
-
-   private LinkedList<Object> storage;
-
- 
-
-   public MyBlockingQueueForWaitNotify (int size) {
-
-       this.maxSize = size;
-
-       storage = new LinkedList<>();
-
-   }
-
- 
-
-   public synchronized void put() throws InterruptedException {
-
-       while (storage.size() == maxSize) {
-
-           this.wait();
-
-       }
-
-       storage.add(new Object());
-
-       this.notifyAll();
-
-   }
-
- 
-
-   public synchronized void take() throws InterruptedException {
-
-       while (storage.size() == 0) {
-
-           this.wait();
-
-       }
-
-       System.out.println(storage.remove());
-
-       this.notifyAll();
-
-   }
-
+  
+  private int maxSize;
+  
+  private LinkedList<Object> storage;
+  
+  public MyBlockingQueueForWaitNotify (int size) {
+    this.maxSize = size;
+    storage = new LinkedList<>();
+  }
+  
+  public synchronized void put() throws InterruptedException {
+    while (storage.size() == maxSize) {
+      this.wait();
+    }
+    storage.add(new Object());
+    this.notifyAll();
+  }
+  
+  public synchronized void take() throws InterruptedException {
+    while (storage.size() == 0) {
+      this.wait();
+    }
+    
+    System.out.println(storage.remove());
+    this.notifyAll();
+  }
 }
-
 ```
 
 如代码所示，最主要的部分仍是 put 与 take 方法。我们先来看 put 方法，该方法被 synchronized 保护，while 检查 List 是否已满，如果不满就往里面放入数据，并通过 notifyAll() 唤醒其他线程。同样，take 方法也被 synchronized 修饰，while 检查 List 是否为空，如果不为空则获取数据并唤醒其他线程。
@@ -303,63 +225,47 @@ class MyBlockingQueueForWaitNotify {
 
 左：
 
-```
-public void put(Object o) throws InterruptedException {
+```java
+public void put(Object o) throws InterruptedException {
+  
+  lock.lock();
+  
+  try {
+    while (queue.size() == max) {
+      condition1.await();
+    }
 
-   lock.lock();
+    queue.add(o);
+    condition2.signalAll();
 
-   try {
-
-      while (queue.size() == max) {
-
-         condition1.await();
-
-      }
-
-      queue.add(o);
-
-      condition2.signalAll();
-
-   } finally {
-
-      lock.unlock();
-
-   }
-
+  } finally {
+    lock.unlock();
+  }
 }
 
 ```
 
 右：
 
-```
-public synchronized void put() throws InterruptedException {
-
-   while (storage.size() == maxSize) {
-
-      this.wait();
-
-   }
-
-   storage.add(new Object());
-
-   this.notifyAll();
+```java
+public synchronized void put() throws InterruptedException {
+  while (storage.size() == maxSize) {
+    this.wait();
+  }
+  
+  storage.add(new Object());
+  this.notifyAll();
 
 }
-
 ```
 
 可以看出，左侧是 Condition 的实现，右侧是 wait/notify 的实现：
 
-```
+```bash
 lock.lock() 对应进入 synchronized 方法
-
 condition.await() 对应 object.wait()
-
 condition.signalAll() 对应 object.notifyAll()
-
 lock.unlock() 对应退出 synchronized 方法
-
 ```
 
 实际上，如果说 Lock 是用来代替 synchronized 的，那么 Condition 就是用来代替相对应的 Object 的 wait/notify/notifyAll，所以在用法和性质上几乎都一样。
@@ -370,10 +276,5 @@ await 方法会自动释放持有的 Lock 锁，和 Object 的 wait 一样，不
 
 另外，调用 await 的时候必须持有锁，否则会抛出异常，这一点和 Object 的 wait 一样。
 
-### 总结
 
-首先介绍了 Condition 接口的作用，并给出了基本用法；然后讲解了它的几个注意点，复习了之前 Condition 和 wait/notify 实现简易版阻塞队列的代码，并且对这两种方法，不同的实现进行了对比；最后分析了它们之间的关系。
-
-
-
-> 在Debug模式下，有可能method2的方法会先执行造成死锁，一直等待。——  可能会一直等待，但是不属于死锁，因为await会释放锁。
+> 在 Debug 模式下，有可能method2的方法会先执行造成死锁，一直等待。——  可能会一直等待，但是不属于死锁，因为await会释放锁。

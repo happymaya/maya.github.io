@@ -1,17 +1,20 @@
 ---
-title: HashMap 为什么是线程不安全的
+title: 旅游平台问题
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-09-14 23:33:00 +0800
+date: 2019-11-14 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
 ---
-### 旅游平台问题
 
-什么是旅游平台问题呢？如果想要搭建一个旅游平台，经常会有这样的需求，那就是用户想同时获取多家航空公司的航班信息。比如，从北京到上海的机票钱是多少？有很多家航空公司都有这样的航班信息，所以应该把所有航空公司的航班、票价等信息都获取到，然后再聚合。由于每个航空公司都有自己的服务器，所以分别去请求它们的服务器就可以了，比如请求国航、海航、东航等，如下图所示：
+什么是旅游平台问题呢就是：如果想要搭建一个旅游平台，经常会有这样的需求：那就是用户想同时获取多家航空公司的航班信息。
+
+比如，从北京到上海的机票钱是多少？有很多家航空公司都有这样的航班信息，所以应该把所有航空公司的航班、票价等信息都获取到，
+
+然后再聚合。由于每个航空公司都有自己的服务器，所以分别去请求它们的服务器就可以了，比如请求国航、海航、东航等，如下图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-future-CompletableFuture.png)
 
@@ -49,46 +52,47 @@ mermaid: true
 
 第一个实现方案是用线程池，我们来看一下代码。
 
-```
-public class ThreadPoolDemo {
-    ExecutorService threadPool = Executors.newFixedThreadPool(3);
-    public static void main(String[] args) throws InterruptedException {
-        ThreadPoolDemo threadPoolDemo = new ThreadPoolDemo();
-        System.out.println(threadPoolDemo.getPrices());
-    }
+```java
+public class ThreadPoolDemo {
 
-    private Set<Integer> getPrices() throws InterruptedException {
-        Set<Integer> prices = Collections.synchronizedSet(new HashSet<Integer>());
-        threadPool.submit(new Task(123, prices));
-        threadPool.submit(new Task(456, prices));
-        threadPool.submit(new Task(789, prices));
-        Thread.sleep(3000);
-        return prices;
-    }
-
-    private class Task implements Runnable {
-        Integer productId;
-        Set<Integer> prices;
-
-        public Task(Integer productId, Set<Integer> prices) {
-            this.productId = productId;
-            this.prices = prices;
-        }
-
-        @Override
-        public void run() {
-            int price=0;
-            try {
-                Thread.sleep((long) (Math.random() * 4000));
-                price= (int) (Math.random() * 4000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            prices.add(price);
-        }
-    }
+  ExecutorService threadPool = Executors.newFixedThreadPool(3);
+  
+  public static void main(String[] args) throws InterruptedException {
+    ThreadPoolDemo threadPoolDemo = new ThreadPoolDemo();
+    System.out.println(threadPoolDemo.getPrices());
+  }
+  
+  private Set<Integer> getPrices() throws InterruptedException {
+    Set<Integer> prices = Collections.synchronizedSet(new HashSet<Integer>());
+    threadPool.submit(new Task(123, prices));
+    threadPool.submit(new Task(456, prices));
+    threadPool.submit(new Task(789, prices));
+    Thread.sleep(3000);
+    return prices;
+  }
+  
+  private class Task implements Runnable {
+    Integer productId;
+    Set<Integer> prices;
+    
+    public Task(Integer productId, Set<Integer> prices) {
+      this.productId = productId;
+      this.prices = prices;
+    }
+    
+    @Override
+    public void run() {
+      int price = 0;
+      try {
+        Thread.sleep((long) (Math.random() * 4000));
+        price= (int) (Math.random() * 4000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      prices.add(price);
+    }
+  }
 }
-
 ```
 
 在代码中，新建了一个线程安全的 Set，它是用来存储各个价格信息的，把它命名为 Prices，然后往线程池中去放任务。线程池是在类的最开始时创建的，是一个固定 3 线程的线程池。而这个任务在下方的 Task 类中进行了描述，在这个 Task 中我们看到有 run 方法，在该方法里面，我们用一个随机的时间去模拟各个航空网站的响应时间，然后再去返回一个随机的价格来表示票价，最后把这个票价放到 Set 中。这就是我们 run 方法所做的事情。
@@ -103,52 +107,54 @@ public class ThreadPoolDemo {
 
 ### CountDownLatch
 
-在这里会有一个优化的空间，比如说网络特别好时，每个航空公司响应速度都特别快，你根本不需要等三秒，有的航空公司可能几百毫秒就返回了，那么我们也不应该让用户等 3 秒。所以需要进行一下这样的改进，看下面这段代码：
+在这里会有一个优化的空间，比如说网络特别好时，每个航空公司响应速度都特别快，根本不需要等三秒，有的航空公司可能几百毫秒就返回了，那么我们也不应该让用户等 3 秒。所以需要进行一下这样的改进，看下面这段代码：
 
-```
-public class CountDownLatchDemo {
-    ExecutorService threadPool = Executors.newFixedThreadPool(3);
-    public static void main(String[] args) throws InterruptedException {
-        CountDownLatchDemo countDownLatchDemo = new CountDownLatchDemo();
-        System.out.println(countDownLatchDemo.getPrices());
-    }
+```java
+public class CountDownLatchDemo {
+  
+  ExecutorService threadPool = Executors.newFixedThreadPool(3);
+  
+  public static void main(String[] args) throws InterruptedException {
+    CountDownLatchDemo countDownLatchDemo = new CountDownLatchDemo();
+    System.out.println(countDownLatchDemo.getPrices());
+  }
+  
+  private Set<Integer> getPrices() throws InterruptedException {
+    Set<Integer> prices = Collections.synchronizedSet(new HashSet<Integer>());
+    CountDownLatch countDownLatch = new CountDownLatch(3);
+    threadPool.submit(new Task(123, prices, countDownLatch));
+    threadPool.submit(new Task(456, prices, countDownLatch));
+    threadPool.submit(new Task(789, prices, countDownLatch));
+    countDownLatch.await(3, TimeUnit.SECONDS);
+    return prices;
+  }
+  
+  private class Task implements Runnable {
 
-    private Set<Integer> getPrices() throws InterruptedException {
-        Set<Integer> prices = Collections.synchronizedSet(new HashSet<Integer>());
-        CountDownLatch countDownLatch = new CountDownLatch(3);
-        threadPool.submit(new Task(123, prices, countDownLatch));
-        threadPool.submit(new Task(456, prices, countDownLatch));
-        threadPool.submit(new Task(789, prices, countDownLatch));
-        countDownLatch.await(3, TimeUnit.SECONDS);
-        return prices;
-
-    }
-
-    private class Task implements Runnable {
-        Integer productId;
-        Set<Integer> prices;
-        CountDownLatch countDownLatch;
-        public Task(Integer productId, Set<Integer> prices,
-                CountDownLatch countDownLatch) {
-            this.productId = productId;
-            this.prices = prices;
-            this.countDownLatch = countDownLatch;
-        }
-
-
-        @Override
-        public void run() {
-            int price = 0;
-            try {
-                Thread.sleep((long) (Math.random() * 4000));
-                price = (int) (Math.random() * 4000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            prices.add(price);
-            countDownLatch.countDown();
-        }
-    }
+    Integer productId;
+    Set<Integer> prices;
+    
+    CountDownLatch countDownLatch;
+    
+    public Task(Integer productId, Set<Integer> prices, CountDownLatch countDownLatch) {
+      this.productId = productId;
+      this.prices = prices;
+      this.countDownLatch = countDownLatch;
+    }
+    
+    @Override
+    public void run() {
+      int price = 0;
+      try {
+        Thread.sleep((long) (Math.random() * 4000));
+        price = (int) (Math.random() * 4000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      prices.add(price);
+      countDownLatch.countDown();
+    }
+  }
 }
 ```
 
@@ -210,12 +216,10 @@ public class CompletableFutureDemo {
 }
 ```
 
-这里我们不再使用线程池了，我们看到 getPrices 方法，在这个方法中，我们用了 CompletableFuture 的 runAsync 方法，这个方法会异步的去执行任务。
+这里不再使用线程池了，在 getPrices 方法中，用了 CompletableFuture 的 runAsync 方法，这个方法会异步的去执行任务。
 
-我们有三个任务，并且在执行这个代码之后会分别返回一个 CompletableFuture 对象，我们把它们命名为 task 1、task 2、task 3，然后执行 CompletableFuture 的 allOf 方法，并且把 task 1、task 2、task 3 传入。这个方法的作用是把多个 task 汇总，然后可以根据需要去获取到传入参数的这些 task 的返回结果，或者等待它们都执行完毕等。我们就把这个返回值叫作 allTasks，并且在下面调用它的带超时时间的 get 方法，同时传入 3 秒钟的超时参数。
+有三个任务，并且在执行这个代码之后会分别返回一个 CompletableFuture 对象，把它们命名为 task 1、task 2、task 3，然后执行 CompletableFuture 的 allOf 方法，并且把 task 1、task 2、task 3 传入。这个方法的作用是把多个 task 汇总，然后可以根据需要去获取到传入参数的这些 task 的返回结果，或者等待它们都执行完毕等。就把这个返回值叫作 allTasks，并且在下面调用它的带超时时间的 get 方法，同时传入 3 秒钟的超时参数。
 
 这样一来它的效果就是，如果在 3 秒钟之内这 3 个任务都可以顺利返回，也就是这个任务包括的那三个任务，每一个都执行完毕的话，则这个 get 方法就可以及时正常返回，并且往下执行，相当于执行到 return prices。在下面的这个 Task 的 run 方法中，该方法如果执行完毕的话，对于 CompletableFuture 而言就意味着这个任务结束，它是以这个作为标记来判断任务是不是执行完毕的。但是如果有某一个任务没能来得及在 3 秒钟之内返回，那么这个带超时参数的 get 方法便会抛出 TimeoutException 异常，同样会被我们给 catch 住。这样一来它就实现了这样的效果：会尝试等待所有的任务完成，但是最多只会等 3 秒钟，在此之间，如及时完成则及时返回。那么所以我们利用 CompletableFuture，同样也可以解决旅游平台的问题。它的运行结果也和之前是一样的，有多种可能性。
 
-最后做一下总结。在本课时中，我们先给出了一个旅游平台问题，它需要获取各航空公司的机票信息，随后进行了代码演进，从串行到并行，再到有超时的并行，最后到不仅有超时的并行，而且如果大家速度都很快，那么也不需要一直等到超时时间到，我们进行了这样的一步一步的迭代。
-
-当然除了这几种实现方案之外，还会有其他的实现方案，你能想到哪些实现方案呢？不妨在下方留言告诉我，谢谢。
+当然除了这几种实现方案之外，还会有其他的实现方案......
