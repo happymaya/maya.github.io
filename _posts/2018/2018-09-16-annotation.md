@@ -4,7 +4,7 @@ author:
   name: superhsc
   link: https://github.com/happymaya
 date: 2018-09-16 11:34:00 +0800
-categories: [Java]
+categories: [Java, Base]
 tags: [annotation, 注解]
 ---
 
