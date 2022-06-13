@@ -1,11 +1,11 @@
 ---
-title: BIO、NIO 以及 AIO（15）
+title: IO 模型
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-05-01 22:33:22 +0800
-categories: [Java, Performance Optimization]
-tags: [性能优化, Performance Optimization]
+date: 2019-05-01 15:33:22 +0800
+categories: [Java, Base]
+tags: [IO, BIO, NIO, AIO]
 math: true
 mermaid: true
 ---
