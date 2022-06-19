@@ -1,5 +1,5 @@
 ---
-title: 怀疑下游-做好微服务间依赖的治理和分布式事务
+title: 怀疑下游 - 做好微服务间依赖的治理和分布式事务
 author:
   name: superhsc
   link: https://github.com/happymaya

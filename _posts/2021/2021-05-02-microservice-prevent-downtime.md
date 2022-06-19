@@ -1,9 +1,9 @@
 ---
-title: 做好自己-设计防止宕机的微服务
+title: 做好自己 - 设计防止宕机的微服务
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2021-03-02 23:33:00 +0800
+date: 2021-05-02 23:33:00 +0800
 categories: [Architecture Design, Backend System]
 tags:  [Architecture Design, Backend System]
 math: true
