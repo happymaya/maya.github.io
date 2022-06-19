@@ -1,4 +1,14 @@
-# 热点扣减保证命中的存储分片不挂
+---
+title: 保证热点扣减命中的存储分片不挂
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2021-04-26 15:33:00 +0800
+categories: [Architecture Design, Backend System]
+tags:  [Architecture Design, Backend System]
+math: true
+mermaid: true
+---
 
 ## 热点扣减的典型业务场景
 

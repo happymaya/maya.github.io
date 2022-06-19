@@ -1,4 +1,14 @@
-# 使用纯数据库实现的扣减方案
+---
+title: 使用纯数据库实现的扣减方案
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2021-04-22 15:33:00 +0800
+categories: [Architecture Design, Backend System]
+tags:  [Architecture Design, Backend System]
+math: true
+mermaid: true
+---
 
 在后台开发领域，高并发的扣减一直是比较热门的话题。
 

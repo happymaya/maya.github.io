@@ -9,9 +9,8 @@ tags:  [Architecture Design, Backend System]
 math: true
 mermaid: true
 ---
-# 做好微服务间依赖的治理和分布式事务
 
-## **为什么要怀疑下游**
+## 为什么要怀疑下游
 
 ![抽象的架构示意图](https://images.happymaya.cn/assert/backen-system/jiagou-19-01.png)
 

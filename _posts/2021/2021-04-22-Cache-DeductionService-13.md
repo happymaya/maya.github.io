@@ -1,4 +1,14 @@
-# 利用缓存实现万级并发扣减
+---
+title: 利用缓存实现万级并发扣减
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2021-04-22 15:33:00 +0800
+categories: [Architecture Design, Backend System]
+tags:  [Architecture Design, Backend System]
+math: true
+mermaid: true
+---
 
 采用纯数据库的扣减实现方案，如果以常规的机器或者 Docker 来进行评估，此方案较难实现单机过万的 TPS。
 

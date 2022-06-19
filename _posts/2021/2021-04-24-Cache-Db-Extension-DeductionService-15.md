@@ -1,4 +1,14 @@
-# 数据库与缓存的扩展升级与扣减返还        
+---
+title: 数据库与缓存的扩展升级与扣减返还
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2021-04-24 15:33:00 +0800
+categories: [Architecture Design, Backend System]
+tags:  [Architecture Design, Backend System]
+math: true
+mermaid: true
+---       
 
 扣减中涉及的两个公共话题，分别是：
 

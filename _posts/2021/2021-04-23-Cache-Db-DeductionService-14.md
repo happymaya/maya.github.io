@@ -1,4 +1,14 @@
-# 利用缓存+数据库构建高可靠的扣减方案
+---
+title: 利用缓存+数据库构建高可靠的扣减方案
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2021-04-23 15:33:00 +0800
+categories: [Architecture Design, Backend System]
+tags:  [Architecture Design, Backend System]
+math: true
+mermaid: true
+---       
 
 使用数据库和纯缓存实现的扣减方案。在需求层面上，两者都能实现业务需求。但均存在一些缺陷：
 
