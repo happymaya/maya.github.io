@@ -9,7 +9,6 @@ tags:  [Architecture Design, Backend System]
 math: true
 mermaid: true
 ---
-如何设计微服务才能防止宕机？
 
 做好微服务自身的设计和代码编写的常见手段。
 
@@ -40,7 +39,7 @@ mermaid: true
 
 **首先，微服务及存储需要双机房部署**。双机房部署能够进一步提升服务的容灾能力。双机房部署的架构如下图 1 所示：
 
-![双机房部署架构图](https://images.happymaya.cn/assert/backen-system/dual-room deployment.png)
+![双机房部署架构图](https://images.happymaya.cn/assert/backen-system/jiagou-18-01.png)
 
 上述部署里，同一个微服务分别在两个机房各部署了两台机器。在存储上，数据库的主从分别部署在两个机房里。当出现机房级别的故障，如网络不通时，可以直接将故障机房的机器从微服务的注册中心摘除。其次，如果故障发生在主库所在机房，就需要 DBA 进行协助，对主从数据库的数据对比、订正并进行数据库的主从切换。
 
@@ -48,7 +47,7 @@ mermaid: true
 
 当真正出现机房故障时，整个微服务仍需停服一定时间，用来等待 DBA  进行主从切换，原则上只在秒级或者分钟级别。这在绝大部分场景里均可满足业务的需要，但有些用户使用高频的场景，如打车、即时通信等软件，需要业务尽可能 7*24 运行，减少或保障不出现业务停服的场景。对于此类需求，可以采用**存储按机房多地部署、且每个机房的存储均支持部分用户的数据读写的方案**进行升级，此方式有个特有名词，叫作**单元化部署的架构**，具体架构如下图 2 所示：
 
-![单元化架构图](https://images.happymaya.cn/assert/backen-system/Cgp9HWBHRkGAdikBAAGJLuwtcSo932.png)
+![单元化架构图](https://images.happymaya.cn/assert/backen-system/jiagou-18-02.png)
 
 在单元化架构里，两个机房里的数据库均为主库，它们都承载读写流量。
 
@@ -64,7 +63,7 @@ mermaid: true
 
 单机房部署单容器故障时导致的跨机房调用如下图 3 所示，可以看到故障后，调用方的所有流量全部都路由至被调用方的单个机房里。
 
-![](https://images.happymaya.cn/assert/backen-system/Cgp9HWBCEHqALpQPAAGoVAJNnZE659.png)
+![](https://images.happymaya.cn/assert/backen-system/jiagou-18-03.png)
 
 **再者，不同类型的接口需要单独部署。**
 
@@ -74,7 +73,7 @@ mermaid: true
 
 假设在微服务拆分时，在垂直拆分时没有按读写分离的方式将读和写服务拆分开，而是将代码编写在同一个工程里。那么部署的时候，可以将将二者的接口拆开部署，拆开后的结构如下图 4 所示：
 
-![读写分离的部署架构](https://images.happymaya.cn/assert/backen-system/uTools_1653985838090.png)
+![读写分离的部署架构](https://images.happymaya.cn/assert/backen-system/jiagou-18-04.png)
 
 隔离开单独部署主要有以下几点考虑。
 
@@ -86,7 +85,7 @@ mermaid: true
 
 现在主流的微服务框架都支持对于接口单独配置一个执行线程，这样在执行时，就可以做到线程池资源隔离，互不影响，具体架构见如下图 5 所示。在某些无法完成机器隔离的场景里，可以使用此方式实现一定程度的资源隔离。
 
-![线程池隔离](https://images.happymaya.cn/assert/backen-system/uTools_1653985974349.png)
+![线程池隔离](https://images.happymaya.cn/assert/backen-system/jiagou-18-05.png)
 
 ### 代码层面
 
