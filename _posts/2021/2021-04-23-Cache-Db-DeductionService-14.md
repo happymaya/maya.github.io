@@ -1,5 +1,5 @@
 ---
-title: 利用缓存+数据库构建高可靠的扣减方案
+title: 利用缓存 + 数据库构建高可靠的扣减方案
 author:
   name: superhsc
   link: https://github.com/happymaya
