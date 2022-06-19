@@ -1,9 +1,9 @@
 ---
-title:  使用简介架构构建高性能的读服务
+title:  使用简洁架构构建高性能的读服务
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2021-03-02 23:33:00 +0800
+date: 2021-03-10 19:33:00 +0800
 categories: [Architecture Design, Backend System]
 tags:  [Architecture Design, Backend System]
 math: true
@@ -36,7 +36,7 @@ mermaid: true
 
 # 架构尽量不分层
 在上一篇总结了如何利用拆分降低系统架构复杂度，通过水平拆分将一些共性的，不容易变的代码逻辑单独封装成一个模块对外服务。这样能够减少重复，提升效率。此时的读服务架构如下图 1 所示：
-![分层架构的读服务.png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636378770037-6f17dd58-ffd4-4f02-a282-1d2d6e852f77.png#clientId=uc2370836-6ecf-4&from=ui&height=415&id=u2a18a5bc&margin=%5Bobject%20Object%5D&name=%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AF%BB%E6%9C%8D%E5%8A%A1.png&originHeight=830&originWidth=472&originalType=binary&ratio=1&size=37597&status=done&style=shadow&taskId=u61b4b655-9c0a-4214-b157-1fa17c09897&width=236)
+![分层架构的读服务](https://images.happymaya.cn/assert/backen-system/jiagou-03-01.png)
 
 但是实际中，通过监控系统可以发现此种架构下，读服务性能的平均值离 TP99 或 TP999 有较大的差距，通常在一倍以上。另外，性能的毛刺也比较多。产生这种情况有以下两个原因：
 
@@ -44,28 +44,28 @@ mermaid: true
 - 另一方面，读服务的业务逻辑都比较简单，性能主要消耗在网络传输上。因此，请求查询的数据越少，性能越好，假设为 10 ms; 数据多的时候，假设为 50ms . 当叠加上分层架构，性能就会翻倍。比如数据少时，从 10 ms 变成 20 ms ; 数据多时，从 50 ms 变成 100 ms，分层后，数据的多与少带来的性能差距达到了 80 ms, 这也是产生毛刺差的原因。
 
 于是，为了提高查询的性能，减少毛刺，同时降低部署机器的数量，可以将水平拆分的数据访问层代码工程保留独立，但是在实际编译时，直接编译到读服务里。以 Java 举例，直接将数据访问层编译为 JAR 包并由读服务进行依赖。这样在部署时，它们在同一个进程里， 去掉网络传输升级后架构如下图 2 所示：
-![分层架构的读服务 (1).png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636380178817-b5fad18f-47d1-4e0e-85c4-cf2855a701f9.png#clientId=uc2370836-6ecf-4&from=ui&height=415&id=u4ddaed09&margin=%5Bobject%20Object%5D&name=%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AF%BB%E6%9C%8D%E5%8A%A1%20%281%29.png&originHeight=830&originWidth=1613&originalType=binary&ratio=1&size=120492&status=done&style=shadow&taskId=u5d700e30-f5c8-46fc-b212-7c94b643854&width=807)
-图2 内嵌的读服务架构
+![内嵌的读服务架构](https://images.happymaya.cn/assert/backen-system/jiagou-03-02.png)
+
 
 在实际的场景中，当进行此项升级后，性能有了较明显的变化（特别是数据量大的时候），TP 999 基本上下降了一半，平均性能提升了 20% ~ 30%，下图 3 展示了一个大致的效果图：
-![内前后的性能效果图.png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636380431534-ab636f14-8acd-42a9-b24e-7bac52dd73a2.png#clientId=uc2370836-6ecf-4&from=ui&height=239&id=u88773291&margin=%5Bobject%20Object%5D&name=%E5%86%85%E5%89%8D%E5%90%8E%E7%9A%84%E6%80%A7%E8%83%BD%E6%95%88%E6%9E%9C%E5%9B%BE.png&originHeight=478&originWidth=1106&originalType=binary&ratio=1&size=84990&status=done&style=shadow&taskId=u333e030c-6a86-4526-9f7a-c68aaa5b0b3&width=553)
-图 3 内嵌后的读服务的性能效果图
+![内前后的性能效果图](https://images.happymaya.cn/assert/backen-system/jiagou-03-03.png)
+
 
 上诉优化隐含的原则是：读服务要尽可能和数据靠近，减少网络传输。此项原则其实已经应用在很多类似的场景里了。比如：
 
 1. 目前很多浏览器自带的本地缓存功能，当浏览一个网页后，在一段时间内再次访问时，此网页的数据就是从浏览器缓存里获取的。直观的感觉就是网页打开速度非常快。
-1. 此外，CDN 也是一样的道理，把需要的数据推送到距离用户最近的机房里，缩短网络传输的距离。
+2. 此外，CDN 也是一样的道理，把需要的数据推送到距离用户最近的机房里，缩短网络传输的距离。
 
 # 代码尽可能简单
 读服务的实现流程非常简单。读服务执行的大致流程如图 4 所示：
-![读服务执行流程图 (2).png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636381632783-98638185-3b25-4ddd-bf52-4a830094e789.png#clientId=uc2370836-6ecf-4&from=ui&height=259&id=u01760700&margin=%5Bobject%20Object%5D&name=%E8%AF%BB%E6%9C%8D%E5%8A%A1%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B%E5%9B%BE%20%282%29.png&originHeight=1034&originWidth=3246&originalType=binary&ratio=1&size=166522&status=done&style=none&taskId=uba74261f-9c02-42f5-ad25-0b2b82cb9eb&width=812)
-结合图 4 所展示的内容，读服务的执行步骤，接口在接受请求时：
+![读服务执行流程图](https://images.happymaya.cn/assert/backen-system/jiagou-03-04.png)
 
+结合图 4 所展示的内容，读服务的执行步骤，接口在接受请求时：
 1. 首先将外部的入参解析成内部模型并进行校验；
-1. 之后会根据具体的存储类型使用内部模型构建查询条件并请求对应的存储；
-1. 获取到数据后，进行反序列化转换为内部模型
-1. 根据业务情况进行适当地处理
-1. 将处理后的数据转换为对外的 SDK 的模型并返回
+2. 之后会根据具体的存储类型使用内部模型构建查询条件并请求对应的存储；
+3. 获取到数据后，进行反序列化转换为内部模型
+4. 根据业务情况进行适当地处理
+5. 将处理后的数据转换为对外的 SDK 的模型并返回
 
 在上述的流程里，有大量的模型映射，比如将外部的模型映射为代码中的内部模型、将内部模型映射为查询条件等。这些不同层次的模型，字段都差不多。为了提升映射效率，有时候会借助一些框架对相同的字段进行自动化的转换。
 
@@ -79,11 +79,9 @@ mermaid: true
 读服务最主要依赖的中间件是存储，因此存储的性能很大程度上决定了读服务的性能。对于 MySQL、HBase 等数据库，即使使用分库分表、读写分离、索引优化等手段，在并发量大时，性能也很难达到 200ms 以内。
 
 为了提升性能，实际业务中的架构通常选用基于内存的、性能更好的 Redis 作为主存储，MySQL 作为兜底构建，如下图 5 所示的架构：
-![分层架构的读服务 (2).png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636383955358-ff3bda23-ce49-42c7-b1db-62440e24a0a5.png#clientId=uc2370836-6ecf-4&from=ui&id=u9fd8684f&margin=%5Bobject%20Object%5D&name=%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AF%BB%E6%9C%8D%E5%8A%A1%20%282%29.png&originHeight=910&originWidth=3043&originalType=binary&ratio=1&size=271213&status=done&style=none&taskId=u6148aac0-5e9c-42ed-87fb-3005ec65af9)
+![缓存 + 数据库的读服务架构](https://images.happymaya.cn/assert/backen-system/jiagou-03-05.png)
 
-图5 缓存 + 数据库的读服务架构
-
-图 5 所示的架构称为懒加载模式。在初始的时候，所有数据都存储在数据库中。当读服务接受请求时，会先去缓存中查询数据，如果没有查询到数据，就会降级到数据库中查询，并将查询结果保存在 Redis 中，以供下一次请求进行查询。保存在 Redis 中的数据会设置一个过期时间，防止数据库的数据变更了，请求还一直读取缓存中的脏数据。
+上图所示的架构称为**懒加载模式**。在初始的时候，所有数据都存储在数据库中。当读服务接受请求时，会先去缓存中查询数据，如果没有查询到数据，就会降级到数据库中查询，并将查询结果保存在 Redis 中，以供下一次请求进行查询。保存在 Redis 中的数据会设置一个过期时间，防止数据库的数据变更了，请求还一直读取缓存中的脏数据。
 
 上述的架构设计简单清晰且实现成本较低。但是依然还存在一些潜在的问题。不能满足高可用以及完全高性能的要求。主要有以下几大类问题：
 
@@ -103,15 +101,14 @@ mermaid: true
 
 **在缓存中设置过期时间，虽然可以让用户感知到数据的变更。但感知并不是实时的，会有一定延迟**。在某些对于数据变更不敏感的场景是可以的，比如编辑新发布一个新闻，但你没有看到，因为你都不知道编辑新发布了一个新闻。
 如果想要做到实时看到数据的变更，可以将架构升级，升级后的架构如下图 6 所示：
-![分层架构的读服务 (4).png](https://cdn.nlark.com/yuque/0/2021/png/12442250/1636385690195-1ec23a4c-ba02-4096-96eb-f962fe7a7d27.png#clientId=uc2370836-6ecf-4&from=ui&id=u26bbe229&margin=%5Bobject%20Object%5D&name=%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84%E7%9A%84%E8%AF%BB%E6%9C%8D%E5%8A%A1%20%284%29.png&originHeight=964&originWidth=4867&originalType=binary&ratio=1&size=410195&status=done&style=none&taskId=u95d9e416-4f13-4d02-b601-47b64196869)
-图 6 主动推送变更的架构（右一）
+![主动推送变更的架构](https://images.happymaya.cn/assert/backen-system/jiagou-03-06.png)
 
 在每次修改完数据之后，主动将数据更新至缓存里。此种方案下，缓存里的数据均和数据库保持一直。
 但是在细节上，还是存在一些问题。如果修改完了数据库再更新缓存，在异常情况下，可能出现数据库更新成功了，但缓存更新失败了的情况。因为数据库和缓存是两个存储，如果没有分布式事务的机制，缓存更新失败了，数据库的数据是不会回滚的。此时，缓存和数据库中的数据依然不一致，因此这个方案并没有完美解决问题。如果先更新缓存，再更新数据库，同时会因为没有分布式事务的保障，出现缓存中存在脏数据的问题。
 另外，在更新数据库后主动更新缓存的模式，在实际的实施层面很容易出现遗漏。因为需要在所有更新数据库的地方都加上主动更新缓存的代码，当开发人员不断变更时，很容易出现遗漏的情况，比如在某一个需求里，开发人员只更新了数据库而没有更新缓存。
 除了容易遗漏之外，在所有更新数据库的地方，都利用缓存和数据库的分布式事务来保证数据完全一致的成本较高。在实际工作中，成本也是一个必须要考虑的问题（之后详细总结）。
 
-4. **懒加载无法摆脱毛刺的困扰**
+1. **懒加载无法摆脱毛刺的困扰**
 
 **使用懒加载的缓存过期方案，还有一个无法避免的问题，就是性能毛刺。**当缓存过期时，读服务的请求都会穿透到数据库中，对于穿透请求的性能和使用缓存的性能差距非常大，时常是毫秒和秒级别的差异。
 
