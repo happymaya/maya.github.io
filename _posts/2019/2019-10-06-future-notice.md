@@ -3,7 +3,7 @@ title: Future 的注意点
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-10-16 23:33:00 +0800
+date: 2019-10-06 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
