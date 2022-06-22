@@ -10,7 +10,7 @@ math: true
 mermaid: true
 ---
 
-### 简介
+## 简介
 
 Lock 接口是 Java 5 引入的，最常见的实现类是 ReentrantLock，可以起到“锁”的作用。
 
@@ -20,11 +20,11 @@ Lock 和 synchronized 是两种最常见的锁，锁是一种工具，用于控�
 
 
 
-### 方法纵览
+## 方法
 
-我们首先看下 Lock 接口的各个方法，如代码所示。
+Lock 接口的各个方法，如代码所示。
 
-```
+```java
 public interface Lock {
     void lock();
     void lockInterruptibly() throws InterruptedException;
@@ -36,52 +36,53 @@ public interface Lock {
 
 ```
 
-我们可以看到与 Lock 接口加解锁相关的主要有 5 个方法，我们接下来重点分析这 5 种方法的作用和用法，这 5 种方法分别是 lock()、tryLock()、tryLock(long time, TimeUnit unit) 和 lockInterruptibly()、unlock()。
+Lock 接口加解锁相关的主要有 5 个方法，这 5 种方法分别是：
+
+- lock()；
+- tryLock()；
+- tryLock(long time, TimeUnit unit) ；
+- lockInterruptibly()；
+- unlock()
 
 
 
 ### lock() 方法
 
-在 Lock 接口中声明了 4 种方法来获取锁（lock()、tryLock()、tryLock(long time, TimeUnit unit)和lockInterruptibly()），那么这 4 种方法具体有什么区别呢？
+在 Lock 接口中声明了 4 种方法来获取锁：
+
+- lock()；
+- tryLock()；
+- tryLock(long time, TimeUnit unit)；
+- lockInterruptibly()）
 
 首先，lock() 是最基础的获取锁的方法。在线程获取锁时如果锁已被其他线程获取，则进行等待，是最初级的获取锁的方法。
 
 对于 Lock 接口而言，获取锁和释放锁都是显式的，不像 synchronized 那样是隐式的，所以 Lock 不会像 synchronized 一样在异常时自动释放锁（synchronized 即使不写对应的代码也可以释放），lock 的加锁和释放锁都必须以代码的形式写出来，所以使用 lock() 时必须由我们自己主动去释放锁，因此最佳实践是执行 lock() 后，首先在 try{} 中操作同步资源，如果有必要就用 catch{} 块捕获异常，然后在 finally{} 中释放锁，以保证发生异常时锁一定被释放，示例代码如下所示。
 
-```
-Lock lock = ...;
-
+```java
+Lock lock = ...;
 lock.lock();
-
-try{
-
-    //获取到了被本锁保护的资源，处理任务
-
-    //捕获异常
-
-}finally{
-
-    lock.unlock();   //释放锁
-
+try {
+    // 获取到了被本锁保护的资源，处理任务
+    // 捕获异常
+} finally {
+    lock.unlock(); // 释放锁
 }
-
 ```
 
 在这段代码中我们创建了一个 Lock，并且用 Lock 方法加锁，然后立刻在 try 代码块中进行相关业务逻辑的处理，如果有需要还可以进行 catch 来捕获异常，但是最重要的是 finally，大家一定不要忘记在 finally 中添加 unlock() 方法，以便保障锁的绝对释放。
 
-如果我们不遵守在 finally 里释放锁的规范，就会让 Lock 变得非常危险，因为你不知道未来什么时候由于异常的发生，导致跳过了 unlock() 语句，使得这个锁永远不能被释放了，其他线程也无法再获得这个锁，这就是 Lock 相比于 synchronized 的一个劣势，使用 synchronized 时不需要担心这个问题。
+如果不遵守在 finally 里释放锁的规范，就会让 Lock 变得非常危险，因为不知道未来什么时候由于异常的发生，导致跳过了 unlock() 语句，使得这个锁永远不能被释放了，其他线程也无法再获得这个锁，这就是 Lock 相比于 synchronized 的一个劣势，使用 synchronized 时不需要担心这个问题。
 
-与此同时，lock() 方法不能被中断，这会带来很大的隐患：一旦陷入死锁，lock() 就会陷入永久等待，所以一般我们用 tryLock() 等其他更高级的方法来代替 lock()，下面我们就看一看 tryLock() 方法。
-
-
+与此同时，lock() 方法不能被中断，这会带来很大的隐患：一旦陷入死锁，lock() 就会陷入永久等待，所以一般用 tryLock() 等其他更高级的方法来代替 lock()。
 
 ### tryLock()
 
 tryLock() 用来尝试获取锁，如果当前锁没有被其他线程占用，则获取成功，返回 true，否则返回 false，代表获取锁失败。相比于 lock()，这样的方法显然功能更强大，我们可以根据是否能获取到锁来决定后续程序的行为。
 
-因为该方法会立即返回，即便在拿不到锁时也不会一直等待，所以通常情况下，我们用 if 语句判断 tryLock() 的返回结果，根据是否获取到锁来执行不同的业务逻辑，典型使用方法如下。
+因为该方法会立即返回，即便在拿不到锁时也不会一直等待，所以通常情况下，用 if 语句判断 tryLock() 的返回结果，根据是否获取到锁来执行不同的业务逻辑，典型使用方法如下。
 
-```
+```java
 Lock lock = ...;
 if(lock.tryLock()) {
      try {
@@ -98,7 +99,7 @@ if(lock.tryLock()) {
 
 我们创建 lock() 方法之后使用 tryLock() 方法并用 if 语句判断它的结果，如果 if 语句返回 true，就使用 try finally 完成相关业务逻辑的处理，如果 if 语句返回 false 就会进入 else 语句，代表它暂时不能获取到锁，可以先去做一些其他事情，比如等待几秒钟后重试，或者跳过这个任务，有了这个强大的 tryLock() 方法我们便可以解决死锁问题，代码如下所示。
 
-```
+```java
 public void tryLock(Lock lock1, Lock lock2) throws InterruptedException {
         while (true) {
             if (lock1.tryLock()) {
@@ -142,7 +143,7 @@ tryLock() 的重载方法是 tryLock(long time, TimeUnit unit)，这个方法和
 
 这个方法本身是会抛出 InterruptedException 的，所以使用的时候，如果不在方法签名声明抛出该异常，那么就要写两个 try 块，如下所示。
 
-```
+```java
 public void lockInterruptibly() {
         try {
             lock.lockInterruptibly();

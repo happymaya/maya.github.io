@@ -8,10 +8,9 @@ categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
---- 
+​--- 
+...
 synchronized 和 Lock 的异同点，以及该如何选择。
-
-
 
 ### 相同点
 
@@ -54,7 +53,7 @@ synchronized 关键字可以加在方法上，不需要指定锁对象（此时�
 ```java
 lock1.lock();
 lock2.lock();
-...
+···
 lock1.unlock();
 lock2.unlock();
 ```
@@ -63,9 +62,9 @@ lock2.unlock();
 
 ```java
 synchronized(obj1){
-    synchronized(obj2){
-        ...
-    }
+    synchronized(obj2){
+        ...
+    }
 }
 ```
 
@@ -96,7 +95,7 @@ Lock 根据实现不同，有不同的原理，例如 ReentrantLock 内部是通
 
 ### 如何选择
 
-讲完了 synchronized 和 Lock 的相同点和区别，最后我们再来看下如何选择它们，在 Java 并发编程实战和 Java 核心技术里都认为：
+在 《Java 并发编程实战》和 《Java 核心技术》里都认为：
 
 1. 如果能不用最好既不使用 Lock 也不使用 synchronized。因为在许多情况下你可以使用 java.util.concurrent 包中的机制，它会为你处理所有的加锁和解锁操作，也就是推荐优先使用工具类来加解锁。
 2. 如果 synchronized 关键字适合你的程序， 那么请尽量使用它，这样可以减少编写代码的数量，减少出错的概率。因为一旦忘记在 finally 里 unlock，代码可能会出很大的问题，而使用 synchronized 更安全。

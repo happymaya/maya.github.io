@@ -47,11 +47,13 @@ protected boolean tryReleaseShared(int arg) {
 
 它们内部只有一行实现代码，就是直接抛出异常，所以要求在继承 AQS 之后，必须把相关方法去重写、覆盖，这样未来写的线程协作类才能正常的运行。
 
-# AQS 在 CountDownLatch 的应用
+## AQS 在 CountDownLatch 的应用
 
-上面是 AQS 的基本流程，用例子来帮助理解，一起来看看 AQS 在 CountDownLatch 中的应用。
+上面是 AQS 的基本流程，用例子来帮助理解 AQS 在 CountDownLatch 中的应用。
 
-在 CountDownLatch 里面有一个子类，该类的类名叫 **Sync，这个类正是继承自 AQS**。下面是 CountDownLatch 部分代码的截取：
+在 CountDownLatch 里面有一个子类，该类的类名叫 **Sync，这个类正是继承自 AQS**。
+
+下面是 CountDownLatch 部分代码的截取：
 
 ```java
 public class CountDownLatch {
@@ -96,7 +98,6 @@ public class CountDownLatch {
 同时，Sync 不但继承了 AQS 类，**还重写了 tryAcquireShared 和 tryReleaseShared 方法**，这正对应了“第二步，想好设计的线程协作工具类的协作逻辑，在 Sync 类里，根据是否是独占，来重写对应的方法。如果是独占，则重写 tryAcquire 或 tryRelease 等方法；如果是非独占，则重写 tryAcquireShared 和 tryReleaseShared 等方法”。
 
 这里的 CountDownLatch 属于非独占的类型，因此它重写了 `tryAcquireShared` 和 `tryReleaseShared` 方法。
-
 
 ## 构造函数
 
@@ -242,6 +243,10 @@ getState 方法获取到的值是剩余需要倒数的次数，如果此时剩�
 
 这里的 await 和 countDown 方法，正对应了本讲一开始所介绍的“第三步，在自己的线程协作工具类中，实现获取/释放的相关方法，并在里面调用 AQS 对应的方法，如果是独占则调用 acquire 或 release 等方法，非独占则调用 acquireShared 或 releaseShared 或 acquireSharedInterruptibly 等方法。”
 
-## AQS 在 CountDownLatch 的应用总结
+## 总结
 
-最后对 AQS 在 CountDownLatch 的应用进行总结。当线程调用 CountDownLatch 的 await 方法时，便会尝试获取“共享锁”，不过一开始通常获取不到锁，于是线程被阻塞。“共享锁”可获取到的条件是“锁计数器”的值为 0，而“锁计数器”的初始值为 count，当每次调用 CountDownLatch 对象的 countDown 方法时，也可以把“锁计数器” -1。通过这种方式，调用 count 次 countDown 方法之后，“锁计数器”就为 0 了，于是之前等待的线程就会继续运行了，并且此时如果再有线程想调用 await 方法时也会被立刻放行，不会再去做任何阻塞操作了。
+当线程调用 CountDownLatch 的 await 方法时，便会尝试获取“共享锁”，不过一开始通常获取不到锁，于是线程被阻塞。
+
+“共享锁”可获取到的条件是“锁计数器”的值为 0，而“锁计数器”的初始值为 count，当每次调用 CountDownLatch 对象的 countDown 方法时，也可以把“锁计数器” -1。
+
+通过这种方式，调用 count 次 countDown 方法之后，“锁计数器”就为 0 了，于是之前等待的线程就会继续运行了，并且此时如果再有线程想调用 await 方法时也会被立刻放行，不会再去做任何阻塞操作了。

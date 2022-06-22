@@ -12,52 +12,47 @@ mermaid: true
 
 ### 读锁插队策略
 
-首先，我们来看一下读锁的插队策略，在这里先快速回顾一下在 24 课时公平与非公平锁中讲到的 ReentrantLock，如果锁被设置为非公平，那么它是可以在前面线程释放锁的瞬间进行插队的，而不需要进行排队。在读写锁这里，策略也是这样的吗？
+ReentrantLock，如果锁被设置为非公平，那么它是可以在前面线程释放锁的瞬间进行插队的，而不需要进行排队。在读写锁这里，策略也是这样的吗？
 
-首先，我们看到 ReentrantReadWriteLock 可以设置为公平或者非公平，代码如下：
-
-公平锁：
+首先，看到 ReentrantReadWriteLock 可以设置为公平或者非公平，代码如下：
 
 ```java
+// 公平锁
 ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(true);
-```
 
-
-
-非公平锁：
-
-```java
+// 非公平锁
 ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock(false);
-
 ```
 
+如果是公平锁，就在构造函数的参数中传入 true；
 
+如果是非公平锁，就在构造函数的参数中传入 false。
 
-如果是公平锁，我们就在构造函数的参数中传入 true，如果是非公平锁，就在构造函数的参数中传入 false，默认是非公平锁。在获取读锁之前，线程会检查 readerShouldBlock() 方法，同样，在获取写锁之前，线程会检查 writerShouldBlock() 方法，来决定是否需要插队或者是去排队。
+默认是非公平锁。在获取读锁之前，线程会检查 readerShouldBlock() 方法，同样，在获取写锁之前，线程会检查 writerShouldBlock() 方法，来决定是否需要插队或者是去排队。
 
-首先看公平锁对于这两个方法的实现：
+公平锁对于这两个方法的实现：
 
 ```java
-final boolean writerShouldBlock() {
-    return hasQueuedPredecessors();
+final boolean writerShouldBlock() {
+    return hasQueuedPredecessors();
 }
 
-final boolean readerShouldBlock() {
-    return hasQueuedPredecessors();
+final boolean readerShouldBlock() {
+    return hasQueuedPredecessors();
 }
 ```
 
 很明显，在公平锁的情况下，只要等待队列中有线程在等待，也就是 hasQueuedPredecessors() 返回 true 的时候，那么 writer 和 reader 都会 block，也就是一律不允许插队，都乖乖去排队，这也符合公平锁的思想。
 
-下面让我们来看一下非公平锁的实现：
+非公平锁的实现：
 
-```
-final boolean writerShouldBlock() {
-    return false; // writers can always barge
+```java
+final boolean writerShouldBlock() {
+    // writers can always barge
+    return false;
 }
-
-final boolean readerShouldBlock() {
-    return apparentlyFirstQueuedIsExclusive();
+final boolean readerShouldBlock() {
+    return apparentlyFirstQueuedIsExclusive();
 }
 ```
 
@@ -147,13 +142,13 @@ public class ReadLockJumpQueue {
 以上代码的运行结果是：
 
 ```java
-Thread-2得到读锁，正在读取
-Thread-4得到读锁，正在读取
+Thread-2得到读锁, 正在读取
+Thread-4得到读锁, 正在读取
 Thread-2释放读锁
 Thread-4释放读锁
-Thread-3得到写锁，正在写入
+Thread-3得到写锁, 正在写入
 Thread-3释放写锁
-Thread-5得到读锁，正在读取
+Thread-5得到读锁, 正在读取
 Thread-5释放读锁
 ```
 
@@ -165,62 +160,60 @@ Thread-5释放读锁
 
 #### 读写锁降级功能代码演示
 
-下面我们再来看一下锁的升降级，首先我们看一下这段代码，这段代码演示了在更新缓存的时候，如何利用锁的降级功能。
+锁的升降级，看一下这段代码，这段代码演示了在更新缓存的时候，如何利用锁的降级功能。
 
 ```java
-public class CachedData {
-
-    Object data;
-    volatile boolean cacheValid;
-    final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-    void processCachedData() {
-        rwl.readLock().lock();
-        if (!cacheValid) {
-            //在获取写锁之前，必须首先释放读锁。
-            rwl.readLock().unlock();
-            rwl.writeLock().lock();
-            try {
-                //这里需要再次判断数据的有效性,因为在我们释放读锁和获取写锁的空隙之内，可能有其他线程修改了数据。
-                if (!cacheValid) {
-                    data = new Object();
-                    cacheValid = true;
-                }
-                //在不释放写锁的情况下，直接获取读锁，这就是读写锁的降级。
-                rwl.readLock().lock();
+public class CachedData {
+    Object data;
+    volatile boolean cacheValid;
+    final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+    void processCachedData() {
+        rwl.readLock().lock();
+        if (!cacheValid) {
+            //在获取写锁之前，必须首先释放读锁。
+            rwl.readLock().unlock();
+            rwl.writeLock().lock();
+            try {
+                // 这里需要再次判断数据的有效性；
+                // 因为在释放读锁和获取写锁的空隙之内，可能有其他线程修改了数据。
+                if (!cacheValid) {
+                    data = new Object();
+                    cacheValid = true;
+                }
+                // 在不释放写锁的情况下，直接获取读锁，这就是读写锁的降级。
+                rwl.readLock().lock();
             } finally {
-                //释放了写锁，但是依然持有读锁
-                rwl.writeLock().unlock();
+                // 释放了写锁，但是依然持有读锁
+                rwl.writeLock().unlock();
             }
-        }
+        }
 
         try {
-            System.out.println(data);
-        } finally {
-            //释放读锁
-            rwl.readLock().unlock();
+            System.out.println(data);
+        } finally {
+            //释放读锁
+            rwl.readLock().unlock();
         }
-    }
+    }
 }
 ```
 
-在这段代码中有一个读写锁，最重要的就是中间的 processCachedData 方法，在这个方法中，会首先获取到读锁，也就是rwl.readLock().lock()，它去判断当前的缓存是否有效，如果有效那么就直接跳过整个 if 语句，如果已经失效，代表我们需要更新这个缓存了。由于我们需要更新缓存，所以之前获取到的读锁是不够用的，我们需要获取写锁。
+在这段代码中有一个读写锁，最重要的就是中间的 processCachedData 方法，在这个方法中，会首先获取到读锁，也就是 rwl.readLock().lock()，它去判断当前的缓存是否有效，如果有效那么就直接跳过整个 if 语句，如果已经失效，代表需要更新这个缓存了。由于需要更新缓存，所以之前获取到的读锁是不够用的，需要获取写锁。
 
-在获取写锁之前，我们首先释放读锁，然后利用 rwl.writeLock().lock() 来获取到写锁，然后是经典的 try finally 语句，在 try 语句中我们首先判断缓存是否有效，因为在刚才释放读锁和获取写锁的过程中，可能有其他线程抢先修改了数据，所以在此我们需要进行二次判断。
+在获取写锁之前，首先释放读锁，然后利用 rwl.writeLock().lock() 来获取到写锁，然后是经典的 try finally 语句，在 try 语句中我们首先判断缓存是否有效，因为在刚才释放读锁和获取写锁的过程中，可能有其他线程抢先修改了数据，所以在此我们需要进行二次判断。
 
-如果我们发现缓存是无效的，就用 new Object() 这样的方式来示意，获取到了新的数据内容，并把缓存的标记位设置为 ture，让缓存变得有效。由于我们后续希望打印出 data 的值，所以不能在此处释放掉所有的锁。我们的选择是在不释放写锁的情况下直接获取读锁，也就是rwl.readLock().lock() 这行语句所做的事情，然后，在持有读锁的情况下释放写锁，最后，在最下面的 try 中把 data 的值打印出来。
+如果发现缓存是无效的，就用 new Object() 这样的方式来示意，获取到了新的数据内容，并把缓存的标记位设置为 ture，让缓存变得有效。由于我们后续希望打印出 data 的值，所以不能在此处释放掉所有的锁。我们的选择是在不释放写锁的情况下直接获取读锁，也就是rwl.readLock().lock() 这行语句所做的事情，然后，在持有读锁的情况下释放写锁，最后，在最下面的 try 中把 data 的值打印出来。
 
 这就是一个非常典型的利用锁的降级功能的代码。
 
-你可能会想，我为什么要这么麻烦进行降级呢？我一直持有最高等级的写锁不就可以了吗？这样谁都没办法来影响到我自己的工作，永远是线程安全的。
-
-
+为什么要这么麻烦进行降级呢？我一直持有最高等级的写锁不就可以了吗？这样谁都没办法来影响到我自己的工作，永远是线程安全的。
 
 #### 为什么需要锁的降级？
 
 如果我们在刚才的方法中，一直使用写锁，最后才释放写锁的话，虽然确实是线程安全的，但是也是没有必要的，因为我们只有一处修改数据的代码：
 
 ```java
-data = new Object();
+data = new Object();
 ```
 
 后面我们对于 data 仅仅是读取。如果还一直使用写锁的话，就不能让多个线程同时来读取了，持有写锁是浪费资源的，降低了整体的效率，所以这个时候利用锁的降级是很好的办法，可以提高整体性能。
@@ -231,7 +224,7 @@ data = new Object();
 
 如果我们运行下面这段代码，在不释放读锁的情况下直接尝试获取写锁，也就是锁的升级，会让线程直接阻塞，程序是无法运行的。
 
-```
+```java
 final static ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 public static void main(String[] args) {
     upgrade();
@@ -243,7 +236,6 @@ public static void upgrade() {
     rwl.writeLock().lock();
     System.out.println("成功升级");
 }
-
 ```
 
 这段代码会打印出“获取到了读锁”，但是却不会打印出“成功升级”，因为 ReentrantReadWriteLock 不支持读锁升级到写锁。
@@ -252,15 +244,15 @@ public static void upgrade() {
 
 #### 为什么不支持锁的升级？
 
-我们知道读写锁的特点是如果线程都申请读锁，是可以多个线程同时持有的，可是如果是写锁，只能有一个线程持有，并且不可能存在读锁和写锁同时持有的情况。
+读写锁的特点是如果线程都申请读锁，是可以多个线程同时持有的，可是如果是写锁，只能有一个线程持有，并且不可能存在读锁和写锁同时持有的情况。
 
 正是因为不可能有读锁和写锁同时持有的情况，所以升级写锁的过程中，需要等到所有的读锁都释放，此时才能进行升级。
 
 假设有 A，B 和 C 三个线程，它们都已持有读锁。假设线程 A 尝试从读锁升级到写锁。那么它必须等待 B 和 C 释放掉已经获取到的读锁。如果随着时间推移，B 和 C 逐渐释放了它们的读锁，此时线程 A 确实是可以成功升级并获取写锁。
 
-但是我们考虑一种特殊情况。假设线程 A 和 B 都想升级到写锁，那么对于线程 A 而言，它需要等待其他所有线程，包括线程 B 在内释放读锁。而线程 B 也需要等待所有的线程，包括线程 A 释放读锁。这就是一种非常典型的死锁的情况。谁都愿不愿意率先释放掉自己手中的锁。
+但是考虑一种特殊情况。假设线程 A 和 B 都想升级到写锁，那么对于线程 A 而言，它需要等待其他所有线程，包括线程 B 在内释放读锁。而线程 B 也需要等待所有的线程，包括线程 A 释放读锁。这就是一种非常典型的死锁的情况。谁都愿不愿意率先释放掉自己手中的锁。
 
-但是读写锁的升级并不是不可能的，也有可以实现的方案，如果我们保证每次只有一个线程可以升级，那么就可以保证线程安全。只不过最常见的 ReentrantReadWriteLock 对此并不支持。
+但是读写锁的升级并不是不可能的，也有可以实现的方案，如果保证每次只有一个线程可以升级，那么就可以保证线程安全。只不过最常见的 ReentrantReadWriteLock 对此并不支持。
 
 
 

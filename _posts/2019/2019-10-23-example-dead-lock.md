@@ -1,5 +1,5 @@
 ---
-title: 死锁，以及危害
+title: 一个必然死锁的栗子
 author:
   name: superhsc
   link: https://github.com/happymaya
@@ -7,38 +7,56 @@ date: 2019-10-23 23:33:00 +0800
 categories: [Java, Concurrent]
 tags: [thread]
 math: true
-mermaid: true
+mermaid: trues
 ---
 
-**发生在并发中**
 
-首先你要知道，死锁一定发生在并发场景中。我们为了保证线程安全，有时会给程序使用各种能保证并发安全的工具，尤其是锁，但是如果在使用过程中处理不得当，就有可能会导致发生死锁的情况。
 
-**互不相让**
+## 死锁
+
+### 发生的场景
+
+#### **发生在并发中**
+
+死锁一定发生在并发场景中。
+
+为了保证线程安全，有时会给程序使用各种能保证并发安全的工具，尤其是锁，但是如果在使用过程中处理不得当，就有可能会导致发生死锁的情况。
+
+#### **互不相让**
 
 死锁是一种状态，当两个（或多个）线程（或进程）相互持有对方所需要的资源，却又都不主动释放自己手中所持有的资源，导致大家都获取不到自己想要的资源，所有相关的线程（或进程）都无法继续往下执行，在未改变这种状态之前都不能向前推进，我们就把这种状态称为**死锁状态**，认为它们发生了死锁。通俗的讲，死锁就是两个或多个线程（或进程）**被无限期地阻塞，相互等待对方手中资源**的一种状态。
 
-**生活中的例子**
+#### 生活中的例子
 
-下面我们用图示的方法来展示一种生活中发生死锁的情况，如下图所示：
+一种生活中发生死锁的情况，如下图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-67-1.png)
 
-**两个线程的例子**
+这张漫画展示了两个绅士分别向对方鞠躬的场景，为了表示礼貌，他们弯下腰之后谁也不愿意先起身，都希望对方起身之后我再起身。可是这样一来，就**没有任何人可以先起身**，起身这个动作就一直无法继续执行，两人形成了相互等待的状态，所以这就是一种典型的死锁！
 
-下面我们用动画的形式来看一下**两个线程**发生死锁的情况，如下图所示：
+#### **两个线程的例子**
+
+**两个线程**发生死锁的情况，如下图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-67-2.png)
 
-此时我们有两个线程，分别是线程 A 和线程 B，假设线程 A 现在持有了锁 A，线程 B 持有了锁 B，然后线程 A 尝试去获取锁 B，当然它获取不到，因为线程 B 还没有释放锁 B。然后线程 B 又来尝试获取锁 A，同样线程 B 也获取不到锁 A，因为锁 A 已经被线程 A 持有了。这样一来，线程 A 和线程 B 就发生了死锁，因为它们都相互持有对方想要的资源，却又不释放自己手中的资源，形成相互等待，而且会一直等待下去。
+假设有两个线程，分别是线程 A 和线程 B：
 
-**多个线程造成死锁的情况**
+- 假设线程 A 现在持有了锁 A，线程 B 持有了锁 B；
+- 然后线程 A 尝试去获取锁 B，当然它获取不到，因为线程 B 还没有释放锁 B。然后线程 B 又来尝试获取锁 A，同样线程 B 也获取不到锁 A，因为锁 A 已经被线程 A 持有了；
+- 这样一来，线程 A 和线程 B 就发生了死锁，因为它们都相互持有对方想要的资源，却又不释放自己手中的资源，形成相互等待，而且会一直等待下去。
+
+#### **多个线程造成死锁的情况**
 
 死锁不仅仅存在于两个线程的场景，在多个线程中也同样存在。如果多个线程之间的依赖关系是环形，存在环路的依赖关系，那么也可能会发生死锁，如下图所示：
 
 ![](https://images.happymaya.cn/assert/java/thread/java-67-3.png)
 
-我们看到在这个例子中，首先线程 1 持有了锁 A，然后线程 2 持有了锁 B，然后线程 3 持有了锁 C，现在每个线程都分别持有一把锁。接下来线程 1 想要去持有锁 B，可是它获取不到，因为现在锁 B 正在线程 2 的手里；接下来线程 2 又去尝试获取锁 C， 它同样也获取不到，因为现在锁 C 在线程 3 的手里；然后线程 3 去尝试获取锁 A ，当然它也获取不到，因为锁 A 现在在线程 1 的手里，这样一来线程 1、线程 2 和线程 3 相互之间就形成了一个环，这就是在多线程中发生死锁的情况。所以不仅是两个线程，多个线程同样也有可能会发生死锁的情况。
+在这个例子中：
+
+- 首先线程 1 持有了锁 A；然后线程 2 持有了锁 B，最后线程 3 持有了锁 C，现在每个线程都分别持有一把锁；
+- 接下来线程 1 想要去持有锁 B，可是它获取不到，因为现在锁 B 正在线程 2 的手里；接下来线程 2 又去尝试获取锁 C， 它同样也获取不到，因为现在锁 C 在线程 3 的手里；然后线程 3 去尝试获取锁 A ，当然它也获取不到，因为锁 A 现在在线程 1 的手里；
+- 这样一来线程 1、线程 2 和线程 3 相互之间就形成了一个环，这就是在多线程中发生死锁的情况。所以不仅是两个线程，多个线程同样也有可能会发生死锁的情况。
 
 #### 死锁的影响
 
@@ -60,126 +78,71 @@ mermaid: true
 
 一旦发生了死锁，根据发生死锁的线程的职责不同，就可能会造成子系统崩溃、性能降低甚至整个系统崩溃等各种不良后果。而且死锁往往发生在高并发、高负载的情况下，因为可能会直接影响到很多用户，造成一系列的问题。以上就是死锁发生几率不高但是危害大的特点。
 
-### 发生死锁的例子
+#### 发生死锁的例子
 
 下面我们举一个必然会发生死锁的例子，代码如下所示：
 
-```
+```java
 /**
-
- * 描述：     必定死锁的情况
-
+ * 描述：必定死锁的情况
  */
-
 public class MustDeadLock implements Runnable {
+    public int flag;
+    static Object o1 = new Object();
+    static Object o2 = new Object();
 
+    public void run() {
+        System.out.println("线程"+Thread.currentThread().getName() + "的flag为" + flag);
+        if (flag == 1) {
+            synchronized (o1) {
+                try {
+                    Thread.sleep(500);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                synchronized (o2) {
+                    System.out.println("线程1获得了两把锁");
+                }
+            }
+        }
+        if (flag == 2) {
+            synchronized (o2) {
+                try {
+                    Thread.sleep(500);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                synchronized (o1) {
+                    System.out.println("线程2获得了两把锁");
+                }
+            }
+        }
+    }
 
-
-    public int flag;
-
-    static Object o1 = new Object();
-
-    static Object o2 = new Object();
-
-
-
-    public void run() {
-
-        System.out.println("线程"+Thread.currentThread().getName() + "的flag为" + flag);
-
-        if (flag == 1) {
-
-            synchronized (o1) {
-
-                try {
-
-                    Thread.sleep(500);
-
-                } catch (Exception e) {
-
-                    e.printStackTrace();
-
-                }
-
-                synchronized (o2) {
-
-                    System.out.println("线程1获得了两把锁");
-
-                }
-
-            }
-
-        }
-
-        if (flag == 2) {
-
-            synchronized (o2) {
-
-                try {
-
-                    Thread.sleep(500);
-
-                } catch (Exception e) {
-
-                    e.printStackTrace();
-
-                }
-
-                synchronized (o1) {
-
-                    System.out.println("线程2获得了两把锁");
-
-                }
-
-            }
-
-        }
-
-    }
-
-
-
-    public static void main(String[] argv) {
-
-        MustDeadLock r1 = new MustDeadLock();
-
-        MustDeadLock r2 = new MustDeadLock();
-
-        r1.flag = 1;
-
-        r2.flag = 2;
-
-        Thread t1 = new Thread(r1, "t1");
-
-        Thread t2 = new Thread(r2, "t2");
-
-        t1.start();
-
-        t2.start();
-
-    }
-
+    public static void main(String[] argv) {
+        MustDeadLock r1 = new MustDeadLock();
+        MustDeadLock r2 = new MustDeadLock();
+        r1.flag = 1;
+        r2.flag = 2;
+        Thread t1 = new Thread(r1, "t1");
+        Thread t2 = new Thread(r2, "t2");
+        t1.start();
+        t2.start();
+    }
 }
-
 ```
 
 可以看到，在这段代码中有一个 int 类型的 flag，它是一个标记位，然后我们新建了 o1 和 o2、作为 synchronized 的锁对象。
 
-下面我们来看看 run 方法。在 run 方法里面，它会首先打印出当前线程的名字，然后打印出当前线程 flag 的值是多少。
+在 run 方法里面，它会首先打印出当前线程的名字，然后打印出当前线程 flag 的值是多少。如果 flag 等于 1，就会先获取 o1 这把锁，然后休眠 500 毫秒，再去尝试获取 o2 这把锁并且打印出"线程1获得了两把锁"。如果 flag 等于 2，那么情况恰恰相反，线程会先获取 o2 这把锁，然后休眠 500 毫秒，再去获取 o1 这把锁，并且打印出"线程2获得了两把锁"。
 
-如果 flag 等于 1，就会先获取 o1 这把锁，然后休眠 500 毫秒，再去尝试获取 o2 这把锁并且打印出"线程1获得了两把锁"。
-
-如果 flag 等于 2，那么情况恰恰相反，线程会先获取 o2 这把锁，然后休眠 500 毫秒，再去获取 o1 这把锁，并且打印出"线程2获得了两把锁"。
-
-最后我们来看一下 main 方法，在 main 方法中新建了两个本类的实例，也就是两个 Runnable 对象，并且把它们的 flag 分别改为 1 和 2：r1 的 flag 设置为 1，r2 的 flag 设置为 2。然后新建两个线程，分别去执行这两个 Runnable 对象，执行 r1 和 r2 这两个线程的名字分别叫做 t1 和 t2，最后我们把两个线程给启动起来。
+在 main 方法中新建了两个本类的实例，也就是两个 Runnable 对象，并且把它们的 flag 分别改为 1 和 2：r1 的 flag 设置为 1，r2 的 flag 设置为 2。然后新建两个线程，分别去执行这两个 Runnable 对象，执行 r1 和 r2 这两个线程的名字分别叫做 t1 和 t2，最后把两个线程给启动起来。
 
 程序的一种执行结果：
 
-```
+```bash
 线程t1的flag为1
-
 线程t2的flag为2
-
 ```
 
 这里的重点就在于程序执行到此时还在继续执行，并没停止，并且它永远不会打印出“线程 1 获得了两把锁”或“线程 2 获得了两把锁”这样的语句，此时这里就发生了死锁。
@@ -208,6 +171,3 @@ public class MustDeadLock implements Runnable {
 
 ![](https://images.happymaya.cn/assert/java/thread/java-67-8.png)
 
-### 总结
-
-在本课时中，我们首先介绍了什么是死锁，接着介绍了死锁在生活中、两个线程中以及多个线程中的例子。然后我们分析了死锁的影响，在 JVM 中如果发生死锁，可能会导致程序部分甚至全部无法继续向下执行的情况，所以死锁在 JVM 中所带来的危害和影响是比较大的，我们需要尽量避免。最后举了一个必然会发生死锁的例子代码，并且对此代码进行了详细的分析。

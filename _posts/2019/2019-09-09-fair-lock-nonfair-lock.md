@@ -12,7 +12,11 @@ mermaid: true
 
 ## 什么是公平和非公平
 
-首先，我们来看下什么是公平锁和非公平锁，公平锁指的是按照线程请求的顺序，来分配锁；而非公平锁指的是不完全按照请求的顺序，在一定情况下，可以允许插队。但需要注意这里的非公平并不是指完全的随机，不是说线程可以任意插队，而是仅仅“在合适的时机”插队。
+公平锁指的是按照线程请求的顺序，来分配锁；
+
+非公平锁指的是不完全按照请求的顺序，在一定情况下，可以允许插队。
+
+但需要注意这里的非公平并不是指完全的随机，不是说线程可以任意插队，而是仅仅“在合适的时机”插队。
 
 那么什么时候是合适的时机呢？假设当前线程在请求获取锁的时候，恰巧前一个持有锁的线程释放了这把锁，那么当前申请锁的线程就可以不顾已经等待的线程而选择立刻插队。但是如果当前线程请求的时候，前一个线程并没有在那一时刻释放锁，那么当前线程还是一样会进入等待队列。
 
@@ -20,13 +24,13 @@ mermaid: true
 
 看到这里，你可能不解，为什么要设置非公平策略呢，而且非公平还是 ReentrantLock的默认策略，如果我们不加以设置的话默认就是非公平的，难道我的这些排队的时间都白白浪费了吗，为什么别人比我有优先权呢？毕竟公平是一种很好的行为，而非公平是一种不好的行为。
 
-让我们考虑一种情况，假设线程 A 持有一把锁，线程 B 请求这把锁，由于线程 A 已经持有这把锁了，所以线程 B 会陷入等待，在等待的时候线程 B 会被挂起，也就是进入阻塞状态，那么当线程 A 释放锁的时候，本该轮到线程 B 苏醒获取锁，但如果此时突然有一个线程 C 插队请求这把锁，那么根据非公平的策略，会把这把锁给线程 C，这是因为唤醒线程 B 是需要很大开销的，很有可能在唤醒之前，线程 C 已经拿到了这把锁并且执行完任务释放了这把锁。相比于等待唤醒线程 B 的漫长过程，插队的行为会让线程 C 本身跳过陷入阻塞的过程，如果在锁代码中执行的内容不多的话，线程 C 就可以很快完成任务，并且在线程 B 被完全唤醒之前，就把这个锁交出去，这样是一个双赢的局面，对于线程 C 而言，不需要等待提高了它的效率，而对于线程 B 而言，它获得锁的时间并没有推迟，因为等它被唤醒的时候，线程 C 早就释放锁了，因为线程 C 的执行速度相比于线程 B 的唤醒速度，是很快的，所以 Java 设计者设计非公平锁，是为了提高整体的运行效率。
+考虑一种情况，假设线程 A 持有一把锁，线程 B 请求这把锁，由于线程 A 已经持有这把锁了，所以线程 B 会陷入等待，在等待的时候线程 B 会被挂起，也就是进入阻塞状态，那么当线程 A 释放锁的时候，本该轮到线程 B 苏醒获取锁，但如果此时突然有一个线程 C 插队请求这把锁，那么根据非公平的策略，会把这把锁给线程 C，这是因为唤醒线程 B 是需要很大开销的，很有可能在唤醒之前，线程 C 已经拿到了这把锁并且执行完任务释放了这把锁。相比于等待唤醒线程 B 的漫长过程，插队的行为会让线程 C 本身跳过陷入阻塞的过程，如果在锁代码中执行的内容不多的话，线程 C 就可以很快完成任务，并且在线程 B 被完全唤醒之前，就把这个锁交出去，这样是一个双赢的局面，对于线程 C 而言，不需要等待提高了它的效率，而对于线程 B 而言，它获得锁的时间并没有推迟，因为等它被唤醒的时候，线程 C 早就释放锁了，因为线程 C 的执行速度相比于线程 B 的唤醒速度，是很快的，所以 Java 设计者设计非公平锁，是为了提高整体的运行效率。
 
 
 
 ## 公平的场景
 
-下面我们用图示来说明公平和非公平的场景，先来看公平的情况。假设我们创建了一个公平锁，此时有 4 个线程按顺序来请求公平锁，线程 1 在拿到这把锁之后，线程 2、3、4 会在等待队列中开始等待，然后等线程 1 释放锁之后，线程 2、3、4 会依次去获取这把锁，线程 2 先获取到的原因是它等待的时间最长。
+用图示来说明公平和非公平的场景，先来看公平的情况。假设我们创建了一个公平锁，此时有 4 个线程按顺序来请求公平锁，线程 1 在拿到这把锁之后，线程 2、3、4 会在等待队列中开始等待，然后等线程 1 释放锁之后，线程 2、3、4 会依次去获取这把锁，线程 2 先获取到的原因是它等待的时间最长。
 
 ![](https://images.happymaya.cn/assert/java/thread/java-thread-locak-unfair-lock-1.png)
 
@@ -45,173 +49,176 @@ mermaid: true
 下面公平和非公平的实际效果，代码如下：
 
 ```java
+package cn.happymaya.base.lock;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
 
- * 描述：演示公平锁，分别展示公平和不公平的情况，非公平锁会让现在持有锁的线程优先再次获取到锁。代码借鉴自Java并发编程实战手册2.7。
+ * 描述：演示公平锁，分别展示公平和不公平的情况，非公平锁会让现在持有锁的线程优先再次获取到锁。代码借鉴自Java并发编程实战手册2.7。
 
- */
-public class FairAndUnfair {
+ */
+public class FairAndUnfair {
 
-    public static void main(String args[]) {
-        PrintQueue printQueue = new PrintQueue();
-        Thread thread[] = new Thread[10];
-        for (int i = 0; i < 10; i++) {
-            thread[i] = new Thread(new Job(printQueue), "Thread " + i);
-        }
+    public static void main(String args[]) {
+        PrintQueue printQueue = new PrintQueue();
+        Thread thread[] = new Thread[10];
+        for (int i = 0; i < 10; i++) {
+            thread[i] = new Thread(new Job(printQueue), "Thread " + i);
+        }
 
-        for (int i = 0; i < 10; i++) {
-            thread[i].start();
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        for (int i = 0; i < 10; i++) {
+            thread[i].start();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-    }
+    }
 }
 
-class Job implements Runnable {
+class Job implements Runnable {
 
-    private PrintQueue printQueue;
-    public Job(PrintQueue printQueue) {
-        this.printQueue = printQueue;
-    }
+    private PrintQueue printQueue;
+    public Job(PrintQueue printQueue) {
+        this.printQueue = printQueue;
+    }
 
-    @Override
-    public void run() {
-        System.out.printf("%s: Going to print a job\n", Thread.currentThread().getName());
-        printQueue.printJob(new Object());
-        System.out.printf("%s: The document has been printed\n", Thread.currentThread().getName());
-    }
+    @Override
+    public void run() {
+        System.out.printf("%s: Going to print a job\n", Thread.currentThread().getName());
+        printQueue.printJob(new Object());
+        System.out.printf("%s: The document has been printed\n", Thread.currentThread().getName());
+    }
 }
 
-class PrintQueue {
-    private final Lock queueLock = new ReentrantLock(false);
-    public void printJob(Object document) {
-        queueLock.lock();
-        try {
-            Long duration = (long) (Math.random() * 10000);
-            System.out.printf("%s: PrintQueue: Printing a Job during %d seconds\n",
-            Thread.currentThread().getName(), (duration / 1000));
-            Thread.sleep(duration);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            queueLock.unlock();
-        }
-        queueLock.lock();
-        try {
-            Long duration = (long) (Math.random() * 10000);
-            System.out.printf("%s: PrintQueue: Printing a Job during %d seconds\n",
-            Thread.currentThread().getName(), (duration / 1000));
-            Thread.sleep(duration);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            queueLock.unlock();
-            }
-    }
+class PrintQueue {
+    private final Lock queueLock = new ReentrantLock(false);
+    public void printJob(Object document) {
+        queueLock.lock();
+        try {
+            Long duration = (long) (Math.random() * 10000);
+            System.out.printf("%s: PrintQueue: Printing a Job during %d seconds\n",
+                    Thread.currentThread().getName(), (duration / 1000));
+            Thread.sleep(duration);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            queueLock.unlock();
+        }
+        queueLock.lock();
+        try {
+            Long duration = (long) (Math.random() * 10000);
+            System.out.printf("%s: PrintQueue: Printing a Job during %d seconds\n",
+                    Thread.currentThread().getName(), (duration / 1000));
+            Thread.sleep(duration);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            queueLock.unlock();
+        }
+    }
 }
 ```
 
 其中，可以通过改变 new ReentrantLock(false) 中的参数来设置公平/非公平锁。以上代码在公平的情况下的输出：
 
-```
-Thread 0: Going to print a job
-Thread 0: PrintQueue: Printing a Job during 5 seconds
-Thread 1: Going to print a job
-Thread 2: Going to print a job
-Thread 3: Going to print a job
-Thread 4: Going to print a job
-Thread 5: Going to print a job
-Thread 6: Going to print a job
-Thread 7: Going to print a job
-Thread 8: Going to print a job
-Thread 9: Going to print a job
-Thread 1: PrintQueue: Printing a Job during 3 seconds
-Thread 2: PrintQueue: Printing a Job during 4 seconds
-Thread 3: PrintQueue: Printing a Job during 3 seconds
-Thread 4: PrintQueue: Printing a Job during 9 seconds
-Thread 5: PrintQueue: Printing a Job during 5 seconds
-Thread 6: PrintQueue: Printing a Job during 7 seconds
-Thread 7: PrintQueue: Printing a Job during 3 seconds
-Thread 8: PrintQueue: Printing a Job during 9 seconds
-Thread 9: PrintQueue: Printing a Job during 5 seconds
-Thread 0: PrintQueue: Printing a Job during 8 seconds
-Thread 0: The document has been printed
-Thread 1: PrintQueue: Printing a Job during 1 seconds
-Thread 1: The document has been printed
-Thread 2: PrintQueue: Printing a Job during 8 seconds
-Thread 2: The document has been printed
-Thread 3: PrintQueue: Printing a Job during 2 seconds
-Thread 3: The document has been printed
-Thread 4: PrintQueue: Printing a Job during 0 seconds
-Thread 4: The document has been printed
-Thread 5: PrintQueue: Printing a Job during 7 seconds
-Thread 5: The document has been printed
-Thread 6: PrintQueue: Printing a Job during 3 seconds
-Thread 6: The document has been printed
-Thread 7: PrintQueue: Printing a Job during 9 seconds
-Thread 7: The document has been printed
-Thread 8: PrintQueue: Printing a Job during 5 seconds
-Thread 8: The document has been printed
-Thread 9: PrintQueue: Printing a Job during 9 seconds
-Thread 9: The document has been printed
+```bash
+Thread 0: Going to print a job
+Thread 0: PrintQueue: Printing a Job during 6 seconds
+Thread 1: Going to print a job
+Thread 2: Going to print a job
+Thread 3: Going to print a job
+Thread 4: Going to print a job
+Thread 5: Going to print a job
+Thread 6: Going to print a job
+Thread 7: Going to print a job
+Thread 8: Going to print a job
+Thread 9: Going to print a job
+Thread 0: PrintQueue: Printing a Job during 8 seconds
+Thread 0: The document has been printed
+Thread 1: PrintQueue: Printing a Job during 9 seconds
+Thread 1: PrintQueue: Printing a Job during 8 seconds
+Thread 1: The document has been printed
+Thread 2: PrintQueue: Printing a Job during 6 seconds
+Thread 2: PrintQueue: Printing a Job during 4 seconds
+Thread 2: The document has been printed
+Thread 3: PrintQueue: Printing a Job during 9 seconds
+Thread 3: PrintQueue: Printing a Job during 8 seconds
+Thread 3: The document has been printed
+Thread 4: PrintQueue: Printing a Job during 4 seconds
+Thread 4: PrintQueue: Printing a Job during 2 seconds
+Thread 4: The document has been printed
+Thread 5: PrintQueue: Printing a Job during 2 seconds
+Thread 5: PrintQueue: Printing a Job during 5 seconds
+Thread 5: The document has been printed
+Thread 6: PrintQueue: Printing a Job during 2 seconds
+Thread 6: PrintQueue: Printing a Job during 6 seconds
+Thread 6: The document has been printed
+Thread 7: PrintQueue: Printing a Job during 6 seconds
+Thread 7: PrintQueue: Printing a Job during 4 seconds
+Thread 7: The document has been printed
+Thread 8: PrintQueue: Printing a Job during 3 seconds
+Thread 8: PrintQueue: Printing a Job during 6 seconds
+Thread 8: The document has been printed
+Thread 9: PrintQueue: Printing a Job during 3 seconds
+Thread 9: PrintQueue: Printing a Job during 5 seconds
+Thread 9: The document has been printed
 ```
 
 可以看出，线程直接获取锁的顺序是完全公平的，先到先得。
 
 而以上代码在非公平的情况下的输出是这样的：
 
-```java
-Thread 0: Going to print a job
-Thread 0: PrintQueue: Printing a Job during 6 seconds
-Thread 1: Going to print a job
-Thread 2: Going to print a job
-Thread 3: Going to print a job
-Thread 4: Going to print a job
-Thread 5: Going to print a job
-Thread 6: Going to print a job
-Thread 7: Going to print a job
-Thread 8: Going to print a job
-Thread 9: Going to print a job
-Thread 0: PrintQueue: Printing a Job during 8 seconds
-Thread 0: The document has been printed
-Thread 1: PrintQueue: Printing a Job during 9 seconds
-Thread 1: PrintQueue: Printing a Job during 8 seconds
-Thread 1: The document has been printed
-Thread 2: PrintQueue: Printing a Job during 6 seconds
-Thread 2: PrintQueue: Printing a Job during 4 seconds
-Thread 2: The document has been printed
-Thread 3: PrintQueue: Printing a Job during 9 seconds
-Thread 3: PrintQueue: Printing a Job during 8 seconds
-Thread 3: The document has been printed
-Thread 4: PrintQueue: Printing a Job during 4 seconds
-Thread 4: PrintQueue: Printing a Job during 2 seconds
-Thread 4: The document has been printed
-Thread 5: PrintQueue: Printing a Job during 2 seconds
-Thread 5: PrintQueue: Printing a Job during 5 seconds
-Thread 5: The document has been printed
-Thread 6: PrintQueue: Printing a Job during 2 seconds
-Thread 6: PrintQueue: Printing a Job during 6 seconds
-Thread 6: The document has been printed
-Thread 7: PrintQueue: Printing a Job during 6 seconds
-Thread 7: PrintQueue: Printing a Job during 4 seconds
-Thread 7: The document has been printed
-Thread 8: PrintQueue: Printing a Job during 3 seconds
-Thread 8: PrintQueue: Printing a Job during 6 seconds
-Thread 8: The document has been printed
-Thread 9: PrintQueue: Printing a Job during 3 seconds
-Thread 9: PrintQueue: Printing a Job during 5 seconds
-Thread 9: The document has been printed
+```bash
+Thread 0: Going to print a job
+Thread 0: PrintQueue: Printing a Job during 6 seconds
+Thread 1: Going to print a job
+Thread 2: Going to print a job
+Thread 3: Going to print a job
+Thread 4: Going to print a job
+Thread 5: Going to print a job
+Thread 6: Going to print a job
+Thread 7: Going to print a job
+Thread 8: Going to print a job
+Thread 9: Going to print a job
+Thread 0: PrintQueue: Printing a Job during 8 seconds
+Thread 0: The document has been printed
+Thread 1: PrintQueue: Printing a Job during 9 seconds
+Thread 1: PrintQueue: Printing a Job during 8 seconds
+Thread 1: The document has been printed
+Thread 2: PrintQueue: Printing a Job during 6 seconds
+Thread 2: PrintQueue: Printing a Job during 4 seconds
+Thread 2: The document has been printed
+Thread 3: PrintQueue: Printing a Job during 9 seconds
+Thread 3: PrintQueue: Printing a Job during 8 seconds
+Thread 3: The document has been printed
+Thread 4: PrintQueue: Printing a Job during 4 seconds
+Thread 4: PrintQueue: Printing a Job during 2 seconds
+Thread 4: The document has been printed
+Thread 5: PrintQueue: Printing a Job during 2 seconds
+Thread 5: PrintQueue: Printing a Job during 5 seconds
+Thread 5: The document has been printed
+Thread 6: PrintQueue: Printing a Job during 2 seconds
+Thread 6: PrintQueue: Printing a Job during 6 seconds
+Thread 6: The document has been printed
+Thread 7: PrintQueue: Printing a Job during 6 seconds
+Thread 7: PrintQueue: Printing a Job during 4 seconds
+Thread 7: The document has been printed
+Thread 8: PrintQueue: Printing a Job during 3 seconds
+Thread 8: PrintQueue: Printing a Job during 6 seconds
+Thread 8: The document has been printed
+Thread 9: PrintQueue: Printing a Job during 3 seconds
+Thread 9: PrintQueue: Printing a Job during 5 seconds
+Thread 9: The document has been printed
 ```
 
 可以看出，非公平情况下，存在抢锁“插队”的现象，比如Thread 0 在释放锁后又能优先获取到锁，虽然此时在等待队列中已经有 Thread 1 ~ Thread 9 在排队了。
 
-
-
-## 对比公平和非公平的优缺点
+## 公平和非公平的优缺点
 
 |          | 优势                                                     | 劣势                                     |
 | -------- | -------------------------------------------------------- | ---------------------------------------- |
@@ -224,23 +231,20 @@ Thread 9: The document has been printed
 
 ### 源码分析
 
-公平和非公平锁的源码，具体看下它们是怎样实现的，先来看看ReentrantLock的源码，代码如下：
+公平和非公平锁的源码，具体看下它们是怎样实现的，看看 ReentrantLock 的源码，代码如下：
 
 ```java
-public class ReentrantLock implements Lock, java.io.Serializable {
-
-private static final long serialVersionUID = 7373984872572414699L;
-
-/** Synchronizer providing all implementation mechanics */
-
-private final Sync sync;
-
+public class ReentrantLock implements Lock, java.io.Serializable {
+    private static final long serialVersionUID = 7373984872572414699L;
+    /** Synchronizer providing all implementation mechanics */
+    private final Sync sync;
+}
 ```
 
 Sync 类的代码：
 
-```
-abstract static class Sync extends AbstractQueuedSynchronizer {...}
+```java
+abstract static class Sync extends AbstractQueuedSynchronizer {...}
 ```
 
 根据代码可知，非公平锁 NonfairSync 和公平锁 FairSync 继承了Sync：
@@ -254,7 +258,7 @@ static final class FairSync extends Sync {...}
 
 公平锁的锁获取源码如下：
 
-```
+```java
 protected final boolean tryAcquire(int acquires) {
     final Thread current = Thread.currentThread();
     int c = getState();
@@ -279,7 +283,7 @@ protected final boolean tryAcquire(int acquires) {
 
 非公平锁的锁获取源码如下：
 
-```
+```java
 final boolean nonfairTryAcquire(int acquires) {
     final Thread current = Thread.currentThread();
     int c = getState();
@@ -308,7 +312,7 @@ final boolean nonfairTryAcquire(int acquires) {
 
 看它的源码就会发现：
 
-```
+```java
 public boolean tryLock() {
     return sync.nonfairTryAcquire(1);
 }
@@ -320,13 +324,7 @@ public boolean tryLock() {
 
 
 
-```
-公平锁实例main中启动线程后不加sleep还是会乱序呀 ————  线程先 start 不代表先执行，需要听从线程调度器的安排，所以需要加 sleep 保证顺序。
-```
+> 公平锁实例main中启动线程后不加sleep还是会乱序呀 ————  线程先 start 不代表先执行，需要听从线程调度器的安排，所以需要加 sleep 保证顺序。
 
-
-
-```
-非公平锁与公平锁唯一区别看起来就是某个新来的线程去获取锁，是否考虑等待队列;那么如果都获取不到锁，进入等待队列后，持有锁的线程解锁后，是不是无论是什么锁，都随机唤醒呢 - 不是随机，是按队列里的顺序。
-```
+> 非公平锁与公平锁唯一区别看起来就是某个新来的线程去获取锁，是否考虑等待队列;那么如果都获取不到锁，进入等待队列后，持有锁的线程解锁后，是不是无论是什么锁，都随机唤醒呢 - 不是随机，是按队列里的顺序。
 
