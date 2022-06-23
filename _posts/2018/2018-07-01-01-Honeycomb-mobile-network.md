@@ -1,10 +1,10 @@
 ---
-title: 漫游互联网：什么是蜂窝网络
+title: 漫游互联网：什么是蜂窝移动网络
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2018-07-01 17:32:00 +0800
-categories: [Base, Network]
+date: 2018-07-01 21:12:00 +0800
+categories: [Internal Power, Network]
 tags: [UDP]
 ---
 

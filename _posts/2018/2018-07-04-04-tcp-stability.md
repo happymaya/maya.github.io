@@ -3,9 +3,9 @@ title: TCP 的稳定性：滑动窗口和流速控制是怎么回事
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2018-07-02 17:32:00 +0800
-categories: [Base, Network]
-tags: [TCP]
+date: 2018-07-04 22:32:00 +0800
+categories: [Internal Power, Network]
+tags: [UDP]
 ---
 
 TCP 利用发送字节数和接收字节数，这个二元组的唯一性保证顺序。本文研究下保证顺序的具体算法，以及如何在保证顺序的基础上，同时追求更高的吞吐量。我认为，这部分知识也是 TCP 协议中最有趣的部分 —— TCP 的滑动窗口算法。
