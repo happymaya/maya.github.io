@@ -8,11 +8,11 @@ categories: [Java, Concurrent]
 tags: [thread]
 math: true
 mermaid: true
-​--- 
-...
+---
+
 synchronized 和 Lock 的异同点，以及该如何选择。
 
-### 相同点
+## 相同点
 
 synchronized 和 Lock 的相同点非常多，我们这里重点讲解 3 个比较大的相同点。
 
