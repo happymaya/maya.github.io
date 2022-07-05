@@ -1,4 +1,14 @@
-## 大型项目性能调优 —— JVM 
+---
+title: 大型项目性能调优 —— JVM 
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2022-01-01 15:03:00 +0800
+categories: [Java, JVM]
+tags: [JVM, JIT, JITWatch, 方法内联, 逃逸分析，编译层次]
+math: true
+mermaid: true
+---
 
 性能调优是一个非常大，并且非常模糊的话题。
 
