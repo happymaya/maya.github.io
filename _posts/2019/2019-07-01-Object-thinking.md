@@ -1,3 +1,15 @@
+---
+title:  对象思维：面向对象编程的优势
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2019-07-01 22:33:00 +0800
+categories: [Architecture Design, Design Patterns]
+tags: [设计模式]
+math: true
+mermaid: true
+---
+
 一说到“面向对象编程”似乎感觉就是编程的全部，实际上它是 20 世纪 60 年代就已经出现的一门“古老”技术，在 2000 年以后，随着 Java 和 .NET 等编程语言的出现，才逐渐开始在企业软件开发中发挥重要作用。
 
 那为什么后来面向对象编程变得这么重要呢？或者说为什么开发人员要学习面向对象编程呢？因为**面向对象编程是一门可以轻松编写高质量软件的综合技术。**
