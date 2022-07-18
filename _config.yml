@@ -23,7 +23,7 @@ timezone:
 
 title: ThinkerWalker                          # the main title
 
-tagline: 只要思想不滑坡，办法总比困难多   # it will display as the sub-title
+tagline: 只要思想不滑坡，办法总比困难多\n日拱一卒无有尽 功不唐捐终入海   # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
   ThinkerWalker, happymaya, superhsc, maya, imaya, thinkerwalker, 清锋, haoshichuan.
@@ -110,7 +110,7 @@ comments:
 # Self-hosted static assets, optional › https://github.com/cotes2020/chirpy-static-assets
 assets:
   self_host:
-    enabled:     # boolean, keep empty means false
+    enabled: true    # boolean, keep empty means false
     # specify the Jekyll environment, empty means both
     # only works if 0`assets.self_host.enabled` is 'true'
     env:           # [development|production]

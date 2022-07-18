@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0  # for posts's lastmod
           token: '${{ secrets.MAYA_ACCESS_TOKEN }}'
-          # submodules: true
+          submodules: true
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

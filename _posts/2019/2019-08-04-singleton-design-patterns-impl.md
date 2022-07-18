@@ -3,7 +3,7 @@ title:  单例设计模式的设计实现
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-03-15 23:33:00 +0800
+date: 2019-08-04 22:33:00 +0800
 categories: [Architecture Design, Design Patterns]
 tags:  [设计模式, 抽象工厂模式 , Design Patterns, Abstract Factory]
 math: true
