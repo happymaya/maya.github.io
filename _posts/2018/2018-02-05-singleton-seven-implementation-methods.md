@@ -1,3 +1,14 @@
+---
+title: 单例设计模式的七种实现方式
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2018-02-05 10:33:00 +0800
+categories: [Design Pattern, creational]
+tags:  [设计模式, Design Pattern, Serven implementation methods of singleton, 单例设计模式, 对象创建型模式]
+math: true
+mermaid: true
+---
 单例设计模式时 GoF23 种设计模式中最常用的设计模式之一，无论是三方库，还是日常开发中，几乎都可以看到单例的影子。
 
 单例设计模式提供了一种在多线程情况下保证实例唯一性的解决方案。

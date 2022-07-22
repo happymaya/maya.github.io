@@ -1,3 +1,15 @@
+---
+title: 单例设计模式：有效进行程序初始化 
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2018-02-05 16:45:00 +0800
+categories: [Design Pattern, creational]
+tags:  [设计模式, Design Pattern, Serven implementation methods of singleton, 单例设计模式, 对象创建型模式]
+math: true
+mermaid: true
+---
+
 # 单例模式分析
 在 GoF 中，单例模式最早的定义如下：
 > 单例模式（Singleton）允许存在一个和仅存在一个给定类的实例。它提供一种机制让任何实体都可以访问该实例。

@@ -1,3 +1,14 @@
+---
+title: 抽象工厂模式：统一不同代码风格下代码级别
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2018-02-01 20:45:00 +0800
+categories: [Design Pattern, creational]
+tags:  [设计模式, Design Pattern, Abstract factory, 抽象工厂模式, 对象创建型模式]
+math: true
+mermaid: true
+---
 
 在 GoF 的 《设计模式》一书中，工厂模式被分为三种：
 
