@@ -4,7 +4,7 @@ author:
   name: superhsc
   link: https://github.com/happymaya
 date: 2022-04-05 11:30:20 +0800
-categories: [Design Pattern]
+categories: [Design Pattern, 思维]
 tags: [对象思维]
 math: true
 mermaid: true
