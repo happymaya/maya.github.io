@@ -1,0 +1,163 @@
+---
+title: 最少原则：实现“最少知识”代码
+author:
+  name: superhsc
+  link: https://github.com/happymaya
+date: 2022-04-11 15:03:00 +0800
+categories: [Design Pattern]
+tags: [迪米特法则（Law of Demeter，简称 LoD）, 最少原则]
+math: true
+mermaid: true
+---
+
+在日常编码中，经常会写下面这样的代码：  
+```java
+final String outputDir = ctxt.getOptions().getScratchDir().getAbsolutePath();
+```
+上面的代码，看上去没有太大问题，但实际上其中任意一个方法发生变化时，这段代码都需要修改。因为调用是依赖的每一个细节，不仅增加了耦合，也使代码结构僵化。
+**迪米特法则正是为了避免对象间出现这样过多的细节依赖而被提出来**，
+# 迪米特法则
+**迪米特法则（Law of Demeter，简称 LoD）** 是由 Ian Holland 于 1987 年提出来，它的核心原则是：
+
+- **一个类只应该与它直接相关的类通信**；
+- **每一个类应该知道自己需要的最少知识**。
+
+换句话说，在面向对象编程中，它要求任何一个对象（O）的方法（m），只应该调用以下对象：
+
+- 对象（O）自身；
+- 通过方法（m）的参数传入的对象；
+- 在方法（m）内创建的对象；
+- 组成对象（O）的对象；
+- 在方法（m）的范围内，可让对象（O）访问的全局变量。
+
+**而 **[**分层思维**](https://www.yuque.com/happymaya/hdpa38/aiu3hg)** ，可以被认为是迪米特法则在架构设计上的一种具体体现**。
+在分层架构中，每一层的模块只能调用自己层中的模块，跳过某一层直接调用另一层中的模块其实就是违反了分层架构的原则。
+**虽然迪米特法则符合封装的原理，但是却和聚合原则相冲突，**因为对象需要尽可能少地考虑其他对象，不能轻易地和其他对象自由组合。
+### 实现满足迪米特法则的代码
+下面通过一个经典案例，实现满足迪米特法则的代码。
+假设一个在超市购物的场景：顾客选好商品后，到收银台找收银员结账。这里我们定义一个顾客类（Customer）、收银员类（PaperBoy ）、钱包类（Wallet ），示例代码如下：
+```java
+/**
+ * 顾客
+ */
+public class Customer {
+    private String firstName;
+    private String lastName;
+    private Wallet myWallet;
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public Wallet getWallet() {
+        return myWallet;
+    }
+}
+
+/**
+ * 钱包
+ */
+public class Wallet {
+    private float value;
+
+    public float getTotalMoney() {
+        return value;
+    }
+
+    public void setTotalValue(float value) {
+        this.value = value;
+    }
+
+    public void addMoney(float deposit) {
+        value = value + deposit;
+    }
+
+    public void subtractMoney(float debit) {
+        value = value - debit;
+    }
+}
+
+/**
+ * 收银员
+ */
+public class PaperBoy {
+    public void charge(Customer myCustomer, float payment) {
+        payment = 2f;
+        Wallet theWallet = myCustomer.getWallet();
+        if (theWallet.getTotalMoney() > payment) {
+            theWallet.subtractMoney(payment);
+        } else {
+            //钱不够的处理
+        }
+    }
+}
+
+```
+当顾客开始进行结账操作（charge()）时，整段代码的实现逻辑如下：
+
+- 收银员算出商品总价后说：“拿出钱包交给我！”
+- 顾客将钱包递给收银员，收银员开始检查钱包里的钱是否够支付。
+- 如果钱够了，收银员拿出相应的钱并退还钱包给顾客；如果钱不够，收银员告诉顾客钱不够需要想办法。
+
+虽然这个场景在现实中不会发生，但是对于这里的收银员类 PaperBoy 来说，直接调用 Wallet 显然是不满足迪米特法则的，因为 Wallet 是属于 Customer 的内部成员——组成对象（O）的对象。
+理解了迪米特法则后，要考虑的就应该是**如何减少顾客和收银员之间的直接耦合**。而这里，**通过钱这个要素来作为中间层进行解耦**就是非常合适的选择。所以，在考虑收银员的角色时，就不应该去管钱包里的钱够不够，而应该是负责判断有没有收到足够的钱；同时，对于顾客角色，应该让他自己管好自己的钱包，只负责判断要支付多少钱。这样，顾客和收银员就不会因为钱包的职责划分不清而耦合在一起了。
+接下来，我们来看看如何修改代码。
+首先，我们将顾客“获取钱包”的动作修改为“支付账单”，代码修改前后对比如下图：
+![图片.png](https://cdn.nlark.com/yuque/0/2022/png/12442250/1657697162213-6338e72c-e413-4c05-86bf-aed103fed900.png#clientId=udcdbe3a3-4654-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=322&id=ub22f067b&margin=%5Bobject%20Object%5D&name=%E5%9B%BE%E7%89%87.png&originHeight=322&originWidth=705&originalType=binary&ratio=1&rotation=0&showTitle=false&size=139407&status=done&style=none&taskId=u6830dd74-e891-4595-bd35-a9354aec5a6&title=&width=705)
+ 这里将顾客支付这个动作封装成方法 pay 单独拆出来，并将收银员对于钱是否足够的判断动作交还给顾客，如下所示：  
+```java
+public float pay(float bill) {
+    if (myWallet != null) {
+        if (myWallet.getTotalMoney() > bill) {
+            myWallet.subtractMoney(bill);
+            return bill;
+        }
+    }
+    return 0;
+}
+```
+ 其次，再将收银员“获取顾客钱包”的动作，修改为“收取顾客支付的钱并和账单比对”，代码对比如下图：  
+![图片.png](https://cdn.nlark.com/yuque/0/2022/png/12442250/1657697201387-9d1ad34c-a0d4-4fda-9627-6fdf9121cecb.png#clientId=udcdbe3a3-4654-4&crop=0&crop=0&crop=1&crop=1&from=paste&height=125&id=u13f622e2&margin=%5Bobject%20Object%5D&name=%E5%9B%BE%E7%89%87.png&originHeight=125&originWidth=711&originalType=binary&ratio=1&rotation=0&showTitle=false&size=80096&status=done&style=none&taskId=ubcc6e9bc-274d-46ad-9789-50ca445c0b7&title=&width=711) 这里收银员的动作就从获取钱包变为根据收到的钱进行判断的动作，如下所示：  
+```java
+/**
+ * 收银员
+ */
+public class PaperBoy {
+    public void charge(Customer myCustomer, float payment) {
+        payment = 2f; // “我要收取2元!”
+        float paidAmount = myCustomer.pay(payment);
+        if (paidAmount == payment) {
+            // 说声谢谢，欢迎下次光临
+        } else {
+            // 可以稍后再来
+        }
+    }
+}
+```
+到此，就利用迪米特法则顺利地实现了代码的解耦。
+很明显，使用迪米特法则后，**不仅降低了代码的耦合，还提高了代码的重用性**。即使未来顾客不想用现金支付，改用微信支付、找朋友代付等，都不会影响收银员的行为。
+### 应用迪米特法则时需要注意的问题
+虽然应用迪米特法则有很多好处，但是迪米特法则因为**太过于关注局部的简化**，而容易导致别的问题出现。
+
+1. **容易为了简化局部而忽略整体的简化。** 迪米特法则在优化局部时很有效，因为会做一定程度信息隐藏，但同时这也是它最大劣势。因为太过于关注每个类之间的直接关系，往往会让更大类之间的关系变得复杂，比如，容易造成超大类。在类对象中加入很多其他类，并没有违反迪米特法则（与直接相关的类耦合，没有关注职责分离），但是随着其他类与更多类发生耦合后，最开始的类的关系其实已经变得非常庞大了；
+1. **拆分时容易引入很多过小的中间类和方法。** 迪米特法则本质上是在对类和方法做隔离，虽然它判断的标准是对象间的直接关系，但是对这个直接关系并没有一个非常好的衡量标准，在实际的开发中，基本上是依据程序员自己的经验来进行判断。于是，经常能在代码里看见一些接口的实现功能只是调用了另一个方法的情况，这其实就是因为过多的隔离带来的中间适配，适配就会产生很多中间类和方法，甚至有的方法没有任何逻辑，只是做了一次数据透传，为的就是避免直接耦合；
+1. **不同模块之间的消息传递效率可能会降低。** 比如，分层架构就是典型的例子，当 Controller 层想要调用 DAO 层的模块时，如果遵循迪米特法则，保持层之间密切联系，那么就意味着需要跨越很多中间层中的模块才行，这样消息传递效率自然会变低。
+### 面向切面编程（AOP）
+众所周知，面向切面编程（Aspect Oriented Programming，简称 AOP）在面试中是高频问题之一，尤其对于 Java 程序员来说，AOP 不仅是 Spring 框架的核心功能，还是在业务中降低耦合性的有效手段之一。
+**面向切面编程，简单来说，就是可以在不修改已有程序代码功能的前提下给程序动态添加功能的一种技术。**
+如果说迪米特法则是在**程序设计时（静态）** 降低代码耦合的方法的话，那么面向切面编程就是在**程序运行期间（动态）** 降低代码耦合的方法。比如，在 Spring 框架中大量使用的 AspectJ 工具就是面向切面编程的一种最佳实践。
+不过，这里尤其要注意，面向切面编程（AOP）和面向对象编程（OOP）虽然最终想要达到的目的相同，都是降低代码耦合性，但关注点却是截然不同的。这也是很多人在面试或设计时容易搞混淆的地方。
+结合具体的例子来说明一下。对“会员用户”这个业务单元进行封装时，使用 OOP 思想，你会自然建立一个“Member”类，并在其中封装会员用户对应的属性和行为；如果使用 AOP 思想，会发现使用“Member”无法统一属性和行为，因为不同会员可能有不同的偏好属性和行为。同样，对于“性能统计”这个统一的动作来说，使用 AOP 会很方便，而使用 OOP 封装又会变成每一个类都要加一个性能统计的动作，变得过于累赘。
+从以上例子你可能已经发现，面向切面编程（AOP）和面向对象编程（OOP）这两种设计思想有着本质的差异：
+
+- OOP 强调对象内在的自洽性，更适合**业务功能**，比如商品、订单、会员；
+- 对于**统一的行为动作**，如日志记录、性能统计、权限控制、事务处理等，使用 AOP 则更合适，通过关注系统本身的行为，而不去影响功能业务逻辑的实现和演进。
+### 总结
+**迪米特法则又叫最少知识原则**，核心思想是**通过减少和不必要的类进行通信来降低代码耦合**，在编程中可以用来指导对象间如何正确地协作。
+不过在我看来，在真实的软件开发中，**应该将迪米特法则作为一个参考原则而不是绝对原则，因为有时过度低耦合反而会带来更多问题**。
+比如，只有一个人维护的项目，却硬要搞成几十个微服务模块的模块设计，结果不仅导致维护复杂性增高，并且系统也会变得更脆弱。降低耦合可以作为一个演进目标，但不能每时每刻都要求做到低耦合。
+除了不过度使用迪米特法则外，在学习它时还要抓住另一个关键词：**最少知识**。最少知识，可以说是提升执行效率最好的方法之一，因为有时知道的信息越多，反而决策越困难，执行效率也越低，所以有时你得控制自己在设计对象时的知识范围，避免过多知识引起不必要的耦合发生。
