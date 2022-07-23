@@ -19,7 +19,7 @@ mermaid: true
 
 UML 图：
 
-![](https://images.happymaya.cn/assert/design-patterns/template-uml.png#crop=0&crop=0&crop=1&crop=1&id=B3LeM&originHeight=264&originWidth=444&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![](https://images.happymaya.cn/assert/design-patterns/template-uml.png)
 
 模板方法模式包含的关键角色有两个：
 
@@ -119,18 +119,10 @@ public class Demo {
 
 假设设计一个简单的持续集成发布系统——研发部开发的代码放在 GitLab 上，并使用一个固定的发布流程来进行程序的上线发布，使用模板方法模式来定义一系列规范的流程。
 
-1.  首先，定义一个通用的流程框架类 DeployFlow，定义的步骤有六步，分别是： 
-   1. 从 GitLab 上拉取代码
-   1. 编译打包
-   1. 部署测试环境
-   1. 测试
-   1. 上传包到线上环境
-   1. 启动程序
+首先，定义一个通用的流程框架类 DeployFlow，定义的步骤有六步，分别是： 从 GitLab 上拉取代码、编译打包、部署测试环境、测试、上传包到线上环境以及启动程序。
 
 其中，从 GitLab 上拉取代码、编译打包、部署测试环境和测试这四个步骤，需要子类来进行实现，代码如下： 
 ```java
-package cn.happymaya.ndp.template_method.example;
-
 public abstract class DeployFlow {
 
     /* 使用final关键字来约束步骤不能轻易修改 */
@@ -166,9 +158,7 @@ public abstract class DeployFlow {
 }
 ```
 
-2.  分别实现两个子类： 
-   1. 实现本地的打包编译和上传；
-   1. 实现全自动化的持续集成式的发布。
+然后，分别实现两个子类： 实现本地的打包编译和上传以及实现全自动化的持续集成式的发布。
 ```java
 /* 实现全自动化的持续集成式的发布 */
 public class CicdDeployFlow extends DeployFlow {
@@ -211,7 +201,7 @@ public class LocalDeployFlow extends DeployFlow{
 }
 ```
 
-3.  运行一个单元测试，测试一下本地发布 LocalDeployFlow 和持续集成发布 CicdDeployFlow： 
+最后，运行一个单元测试，测试一下本地发布 LocalDeployFlow 和持续集成发布 CicdDeployFlow： 
 ```java
 package cn.happymaya.ndp.template_method.example;
 
@@ -250,12 +240,10 @@ public class Client {
 ## 优缺点
 
 模板方法模式主要有以下两个优点。
-
 1.  有效去除重复代码。 模板方法模式的父类保存通用的代码逻辑，这样可以让子类不再需要重复处理公用逻辑，只用关注特定的逻辑，从而起到去除子类中重复代码的目的。 
 2.  有助于找到更通用的模板。 由于子类间重复的代码逻辑都会被抽取到父类中，父类也就慢慢变成了更通用的模板，这样有助于积累更多通用的模板，提升代码复用性和扩展性。 
 
-模板方法模式的缺点。
-
+模板方法模式的缺点：
 1. 不符合开闭原则。 一个父类调用子类实现操作，通过子类扩展增加新的行为，但是子类执行的结果便会受到父类的影响，不符合开闭原则的“对修改关闭”；
 2. 增加代码阅读的难度。 由于父类的某些步骤或方法被延迟到子类执行，那么需要跳转不同的子类阅读代码逻辑，如果子类的数量很多的话，跳转会很多，不方便联系上下文逻辑线索。而且模板方法中的步骤越多，其维护工作就可能会越困难。
 3. 违反里氏替换原则。 虽然模板方法模式中的父类会提供通用的实现方法，但是延迟到子类的操作便会变成某种定制化的操作，一旦替换子类，可能会导致父类不可用或整体逻辑发生变化。

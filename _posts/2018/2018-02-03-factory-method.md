@@ -20,10 +20,9 @@ mermaid: true
 
 工厂方法模式的 UML 图：
 
-![](https://images.happymaya.cn/assert/design-patterns/factory-uml.png#crop=0&crop=0&crop=1&crop=1&id=zvFkh&originHeight=274&originWidth=421&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![工厂方法模式的 UML 图](https://images.happymaya.cn/assert/design-patterns/factory-uml.png)
 
 工厂方法模式包含三个关键角色：
-
 1. 抽象接口（也叫抽象产品）；
 2. 核心工厂；
 3. 具体产品（也可以是具体工厂）。

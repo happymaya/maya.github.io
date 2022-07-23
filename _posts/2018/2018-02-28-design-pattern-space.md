@@ -10,31 +10,20 @@ math: true
 mermaid: true
 ---
 
-
-
-|  |  | 目的 |  |  |
-| --- | --- | --- | --- | --- |
-|  |  | 创建型 | 结构型 | 行为型 |
-| 范围 | 类 | Factory Method* | Adapter* | Interpreter（解释器）
-Template Method（模板方法） |
-|  | 对象 | Abstract Factory*
-Builder
-Prototype
-Singleton* | Adapter
-Bridge
-Composite*
-Decorator*
-Facade
-Flayweight
-Proxy | Chain of Responsibility（责任链）
-Command（命令）
-Iterator（迭代器模式）
-Mediator（中间者模式）
-Memento（备忘录模式）
-Obeserver（观察者模式）*
-State（状态模式）
-Strategy（策略模式）
-Visitor（访问者模式） |
+|      | 目的              |            |                                   |
+| ---- | ----------------- | ---------- | :-------------------------------- |
+|      | 创建型            | 结构型     | 行为型                            |
+| 类   | Factory Method*   | Adapter*   | Interpreter（解释器）             |
+|      |                   |            | Template Method（模板方法）       |
+| 对象 | Abstract Factory* | Adapter    | Chain of Responsibility（责任链） |
+|      | Builder           | Bridge     | Command（命令）                   |
+|      | Prototype         | Composite* | Iterator（迭代器模式）            |
+|      | Singleton*        | Decorator* | Mediator（中间者模式）            |
+|      |                   | Facade     | Memento（备忘录模式）             |
+|      |                   | Flayweight | Obeserver（观察者模式）*          |
+|      |                   | Proxy      | State（状态模式）                 |
+|      |                   |            | Strategy（策略模式）              |
+|      |                   |            | Visitor（访问者模式）             |
 
 模式依据其目的分为：
 

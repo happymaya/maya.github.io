@@ -37,10 +37,9 @@ mermaid: true
 
 组合场景的 UML 如下图所示：
 
-![](https://images.happymaya.cn/assert/design-patterns/compostie-uml.png#crop=0&crop=0&crop=1&crop=1&id=Hugq1&originHeight=266&originWidth=621&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![组合场景的 UML](https://images.happymaya.cn/assert/design-patterns/compostie-uml.png)
 
 组合模式中包含了三个关键角色：
-
 - 抽象组件：定义需要实现的统一操作；
 - 组合节点：代表一个可以包含多个节点的复合对象，意味着在它下面还可以有其他组合节点或叶子节点；
 - 叶子节点：代表一个原子对象，意味着在它下面不会有其他节点了。
@@ -49,11 +48,11 @@ mermaid: true
 
 可以结合现实中的例子来理解，比如，一个公司中有总经理，在总经理之下有经理、秘书、副经理等，而在经理之下则有组长、开发人员等，其结构图大致如下：
 
-![](https://images.happymaya.cn/assert/desgin/compostie-tree.png#crop=0&crop=0&crop=1&crop=1&id=H5204&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![](https://images.happymaya.cn/assert/desgin/compostie-tree.png)
 
 除了树形结构以外，组合模式中还有环形结构和双向结构（如下图），其中，环形结构和数据结构中的单向链表很相似，而双向结构其实就是 Spring 中 Bean 常用的结构。
 
-![](https://images.happymaya.cn/assert/design-patterns/cpmpostie-other.png#crop=0&crop=0&crop=1&crop=1&id=aYUtT&originHeight=282&originWidth=482&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![](https://images.happymaya.cn/assert/design-patterns/cpmpostie-other.png)
 
 组合模式对应的 UML 的代码实现：
 
@@ -109,7 +108,7 @@ public class Node extends Component{
 
 以”订单信息"为例。假设一个新的商品订单系统（如下图），如何计算每个订单的总费用呢？
 
-![](https://images.happymaya.cn/assert/design-patterns/compostoe-order.png#crop=0&crop=0&crop=1&crop=1&id=sqMq7&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![](https://images.happymaya.cn/assert/design-patterns/compostoe-order.png)
 
 从上面的简图可以看到，一个订单中可能通常会包含各类商品、发票等信息。
 
@@ -117,173 +116,156 @@ public class Node extends Component{
 
 过去，计算价格时的做法是：打开所有快递盒，找到每件商品，然后计算总价。但在程序中，会发现这不是使用简单的 for 循环语句（一次打开盒子的动作）就能完成的，此外，还需要知道：对应的商品类别有哪些，这个订单使用了哪些商品，价格是多少，赠送的商品有哪些，要抵消多少价格……
 
-而组合模式就是专门为需要反复计算或统计的场景而生的。
+而组合模式就是专门为需要反复计算或统计的场景而生的。比如生成树形对象功能的具体实现：
+1. 定义一个抽象组件 AbstractNode，其中定义节点可以做的操作有：判断是否为根节点、获取节点 id、获取节点关联父节点 id、设置 id、设置父 id、增加、删除节点和获取子节点：
 
-### 生成树形对象功能的具体实现
+   ```java
+   public abstract class AbstractNode {
+       public abstract boolean isRoot();
+       
+       public abstract int getId();
+       public abstract int getParentId();
+       
+       public abstract void setId(int id);
+       public abstract void setParentId(int parentId);
+       
+       public abstract void add(AbstractNode abstractNode);
+       public abstract void remove(AbstractNode abstractNode);
+       
+       public abstract AbstractNode getChild(int i);
+   }
+   ```
 
-1.  定义一个抽象组件 AbstractNode，其中定义节点可以做的操作有：判断是否为根节点、获取节点 id、获取节点关联父节点 id、设置 id、设置父 id、增加、删除节点和获取子节点： 
-```java
-package cn.happymaya.ndp.composite;
+   
 
-public abstract class AbstractNode {
+2. 创建组合节点 Node，继承自 AbstractNode 实现定义的 8 种接口方法，其中 List 对象 children 用于存放子节点列表：
 
-    public abstract boolean isRoot();
+   ```java
+   public class ComponentNode extends AbstractNode{
+       private List<AbstractNode> children;
+       private int id;
+       private int pid;
+       
+       public ComponentNode() {
+           children = new ArrayList<AbstractNode>();
+       }
+       
+       @Override
+       public boolean isRoot() { return -1 == pid; }
+       
+       @Override
+       public int getId() { return id;}
+       
+       @Override
+       public int getParentId() { return pid; }
+       
+       @Override
+       public void setId(int id) { this.id = id;}
+       
+       @Override
+       public void setParentId(int parentId) {
+           this.pid = parentId;
+       }
+       
+       @Override
+       public void add(AbstractNode abstractNode) {
+           abstractNode.setParentId(this.pid + children.size());
+           abstractNode.setId(abstractNode.getParentId() + 1);
+           children.add(abstractNode);
+       }
+       
+       @Override
+       public void remove(AbstractNode abstractNode) {
+           children.remove(abstractNode);
+       }
+       
+       @Override
+       public AbstractNode getChild(int i) {
+           return children.get(i);
+       }
+   }
+   ```
 
-    public abstract int getId();
-    public abstract int getParentId();
+   
 
-    public abstract void setId(int id);
-    public abstract void setParentId(int parentId);
+3. 再创建叶子节点 Leaf，同样继承自 AbstractNode，重写 8 种接口方法，不过，因为叶子节点不能新增和删除节点，所以添加和删除方法不支持，并且获取子节点方法也应该为空：
 
-    public abstract void add(AbstractNode abstractNode);
-    public abstract void remove(AbstractNode abstractNode);
+   ```java
+   public class ComponentLeaf extends AbstractNode{
+       private int id;
+       private int pid;
+       
+       @Override
+       public boolean isRoot() {
+           return false;
+       }
+       
+       @Override
+       public int getId() {
+           return this.id;
+       }
+       
+       @Override
+       public int getParentId() {
+           return this.pid;
+       }
+       
+       @Override
+       public void setId(int id) {
+           this.id = id;
+       }
+       
+       @Override
+       public void setParentId(int parentId) {
+           this.pid = parentId;
+       }
+       
+       @Override
+       public void add(AbstractNode abstractNode) {
+           throw new UnsupportedOperationException("这个是叶子节点，无法增加...");
+       }
+       
+       @Override
+       public void remove(AbstractNode abstractNode) {
+           throw new UnsupportedOperationException("这个是叶子节点，无法删除");
+       }
+       
+       @Override
+       public AbstractNode getChild(int i) {
+           return null;
+       }
+   }
+   ```
 
-    public abstract AbstractNode getChild(int i);
+   
 
-}
-```
- 
+4. 最后，运行一个单元测试。创建一个根节点，再将一个有两个叶子节点的组合节点添加到根节点上，并打印组合节点的 id 值l
 
-2.  创建组合节点 Node，继承自 AbstractNode 实现定义的 8 种接口方法，其中 List 对象 children 用于存放子节点列表： 
-```java
-package cn.happymaya.ndp.composite;
+   ```java
+   public class Demo {
+       public static void main(String[] args) {
+           AbstractNode rootNode = new ComponentNode();
+           rootNode.setId(0);
+           rootNode.setParentId(-1);
+   
+           AbstractNode node = new ComponentNode();
+           node.add(new ComponentLeaf());
+           node.add(new ComponentLeaf());
+   
+           rootNode.add(new ComponentLeaf());
+           rootNode.add(new ComponentLeaf());
+           rootNode.add(node);
+   
+           System.out.println(node.getId());
+       }
+   }
+   ```
 
-import java.util.ArrayList;
-import java.util.List;
+   
 
-public class ComponentNode extends AbstractNode{
+通过单元测试代码的运行，实现了建立一个简单的树形结构。从上面所有的代码实现中，定义根节点比较重要，通过根节点能够不断找到相关的节点，而且使用的操作都是相同的。 
 
-    private List<AbstractNode> children;
-    private int id;
-    private int pid;
-
-    public ComponentNode() {
-        children = new ArrayList<AbstractNode>();
-    }
-
-    @Override
-    public boolean isRoot() {
-        return -1 == pid;
-    }
-
-    @Override
-    public int getId() {
-        return id;
-    }
-
-    @Override
-    public int getParentId() {
-        return pid;
-    }
-
-    @Override
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    @Override
-    public void setParentId(int parentId) {
-        this.pid = parentId;
-    }
-
-    @Override
-    public void add(AbstractNode abstractNode) {
-        abstractNode.setParentId(this.pid + children.size());
-        abstractNode.setId(abstractNode.getParentId() + 1);
-        children.add(abstractNode);
-    }
-
-    @Override
-    public void remove(AbstractNode abstractNode) {
-        children.remove(abstractNode);
-    }
-
-    @Override
-    public AbstractNode getChild(int i) {
-        return children.get(i);
-    }
-
-}
-```
- 
-
-3.  再创建叶子节点 Leaf，同样继承自 AbstractNode，重写 8 种接口方法，不过，因为叶子节点不能新增和删除节点，所以添加和删除方法不支持，并且获取子节点方法也应该为空： 
-```java
-package cn.happymaya.ndp.composite;
-
-public class ComponentLeaf extends AbstractNode{
-
-    private int id;
-    private int pid;
-
-    @Override
-    public boolean isRoot() {
-        return false;
-    }
-
-    @Override
-    public int getId() {
-        return this.id;
-    }
-
-    @Override
-    public int getParentId() {
-        return this.pid;
-    }
-
-    @Override
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    @Override
-    public void setParentId(int parentId) {
-        this.pid = parentId;
-    }
-
-    @Override
-    public void add(AbstractNode abstractNode) {
-        throw new UnsupportedOperationException("这个是叶子节点，无法增加...");
-    }
-
-    @Override
-    public void remove(AbstractNode abstractNode) {
-        throw new UnsupportedOperationException("这个是叶子节点，无法删除");
-    }
-
-    @Override
-    public AbstractNode getChild(int i) {
-        return null;
-    }
-}
-```
- 
-
-4.  最后，运行一个单元测试。创建一个根节点，再将一个有两个叶子节点的组合节点添加到根节点上，并打印组合节点的 id 值。 
-```java
-public class Demo {
-    public static void main(String[] args) {
-        AbstractNode rootNode = new ComponentNode();
-        rootNode.setId(0);
-        rootNode.setParentId(-1);
-
-        AbstractNode node = new ComponentNode();
-        node.add(new ComponentLeaf());
-        node.add(new ComponentLeaf());
-
-        rootNode.add(new ComponentLeaf());
-        rootNode.add(new ComponentLeaf());
-        rootNode.add(node);
-
-        System.out.println(node.getId());
-    }
-}
-```
- 
-
-5.  通过单元测试代码的运行，实现了建立一个简单的树形结构。从上面所有的代码实现中，定义根节点比较重要，通过根节点能够不断找到相关的节点，而且使用的操作都是相同的。 
-
-总结来说，在面向对象编程中，组合模式能够很好地适用于**解决树形结构的应用场景。**
+总之，在面向对象编程中，组合模式能够很好地适用于**解决树形结构的应用场景。**
 
 ## 使用组合模式的理由
 

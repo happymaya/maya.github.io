@@ -41,7 +41,7 @@ mermaid: true
 由此可见，抽象工厂模式的定义只是说了抽象工厂模式应该朝着分析共性规律的方向走，而具体操作时需要仔细分析具体实现类应该怎么实现才可以。
 
 下面是抽象工厂模式原始的 UML 图：
-![](/assets/post-img/design-patterns/abstract-factory.png#crop=0&crop=0&crop=1&crop=1&id=jJiRI&originalType=binary&ratio=1&rotation=0&showTitle=false&status=done&style=none&title=)
+![抽象工厂模式原始的 UML 图](https://images.happymaya.cn/assert/design-patterns/abstract-factory.png)
 
 在上面的 UML 图中，能看出抽象工厂模式中包含了四个关键节点：
 
@@ -88,7 +88,7 @@ mermaid: true
 2. 增加学习成本。抽象工厂模式是自顶向下的设计，在最开始就找到正确的抽象是一件非常困难的事情，这就需要大量的实践，并不断总结归纳。
 3. 变更产品的结构困难。抽象工厂模式最大的缺点在于，一旦定义了某种产品结构后，要想修改就得修改所有的具体工厂和抽象工厂。
 
-## 5 总结
+## 总结
 
 抽象工厂模式的使用和创建很简单。
 
