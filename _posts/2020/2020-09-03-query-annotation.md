@@ -3,7 +3,7 @@ title:  Spring Data JPA - @Query
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2020-09-14 23:33:00 +0800
+date: 2020-09-03 23:33:00 +0800
 categories: [Java, Spring]
 tags:  [Spring Security, React]
 math: true
