@@ -1,0 +1,507 @@
+<!DOCTYPE html><html lang="zh-CN" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="generator" content="Jekyll v4.2.2" /><meta property="og:title" content="使用 RestTemplate 消费 RESTful 服务" /><meta name="author" content="superhsc" /><meta property="og:locale" content="zh_CN" /><meta name="description" content="完成 Web 服务的构建后，接下来需要做的事情就是如何对服务进行消费。" /><meta property="og:description" content="完成 Web 服务的构建后，接下来需要做的事情就是如何对服务进行消费。" /><link rel="canonical" href="/posts/rest-template-restful/" /><meta property="og:url" content="/posts/rest-template-restful/" /><meta property="og:site_name" content="ThinkerWalker" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2018-05-03T09:32:00+00:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="使用 RestTemplate 消费 RESTful 服务" /><meta name="twitter:site" content="@happymaya" /><meta name="twitter:creator" content="@superhsc" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"superhsc"},"dateModified":"2022-05-26T21:13:46+00:00","datePublished":"2018-05-03T09:32:00+00:00","description":"完成 Web 服务的构建后，接下来需要做的事情就是如何对服务进行消费。","headline":"使用 RestTemplate 消费 RESTful 服务","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/rest-template-restful/"},"url":"/posts/rest-template-restful/"}</script><title>使用 RestTemplate 消费 RESTful 服务 | ThinkerWalker</title><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/site.webmanifest"><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico"><meta name="apple-mobile-web-app-title" content="ThinkerWalker"><meta name="application-name" content="ThinkerWalker"><meta name="msapplication-TileColor" content="#da532c"><meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://cdn.jsdelivr.net" ><link rel="dns-prefetch" href="https://cdn.jsdelivr.net" ><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@400;600;700;900&display=swap"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1/dist/magnific-popup.min.css"> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get MODE_ATTR() { return "data-mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } static get ID() { return "mode-toggle"; } constructor() { if (this.hasMode) { if (this.isDarkMode) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } let self = this; /* always follow the system prefers */ this.sysDarkPrefers.addEventListener("change", () => { if (self.hasMode) { if (self.isDarkMode) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } self.notify(); }); } /* constructor() */ get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; } get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } /* get the current mode on screen */ get modeStatus() { if (this.isDarkMode || (!this.hasMode && this.isSysDarkPrefer)) { return ModeToggle.DARK_MODE; } else { return ModeToggle.LIGHT_MODE; } } setDark() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_ATTR); sessionStorage.removeItem(ModeToggle.MODE_KEY); } /* Notify another plugins that the theme mode has changed */ notify() { window.postMessage({ direction: ModeToggle.ID, message: this.modeStatus }, "*"); } } /* ModeToggle */ const toggle = new ModeToggle(); function flipMode() { if (toggle.hasMode) { if (toggle.isSysDarkPrefer) { if (toggle.isLightMode) { toggle.clearMode(); } else { toggle.setLight(); } } else { if (toggle.isDarkMode) { toggle.clearMode(); } else { toggle.setDark(); } } } else { if (toggle.isSysDarkPrefer) { toggle.setLight(); } else { toggle.setDark(); } } toggle.notify(); } /* flipMode() */ </script><body data-spy="scroll" data-target="#toc" data-topbar-visible="true"><div id="sidebar" class="d-flex flex-column align-items-end"><div class="profile-wrapper text-center"><div id="avatar"> <a href="/" alt="avatar" class="mx-auto"> <img src=" https://images.happymaya.cn/assert/avatar/logo.png " alt="avatar" onerror="this.style.display='none'"> </a></div><div class="site-title mt-3"> <a href="/">ThinkerWalker</a></div><div class="site-subtitle font-italic">日拱一卒 功不唐捐</div></div><ul class="w-100"><li class="nav-item"> <a href="/" class="nav-link"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>首页</span> </a><li class="nav-item"> <a href="/categories/" class="nav-link"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>分类</span> </a><li class="nav-item"> <a href="/tags/" class="nav-link"> <i class="fa-fw fas fa-tag ml-xl-3 mr-xl-3 unloaded"></i> <span>标签</span> </a><li class="nav-item"> <a href="/archives/" class="nav-link"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>归档</span> </a><li class="nav-item"> <a href="/about/" class="nav-link"> <i class="fa-fw fas fa-info-circle ml-xl-3 mr-xl-3 unloaded"></i> <span>关于</span> </a></ul><div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center"> <button class="mode-toggle btn" aria-label="Switch Mode"> <i class="fas fa-adjust"></i> </button> <span class="icon-border"></span> <a href="https://github.com/happymaya" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github"></i> </a> <a href="https://twitter.com/happymaya" aria-label="twitter" target="_blank" rel="noopener"> <i class="fab fa-twitter"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['haoshichuan','foxmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> 首页 </a> </span> <span>使用 RestTemplate 消费 RESTful 服务</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> 文章</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" autocomplete="off" placeholder="搜索..."> </span> <span id="search-cancel" >取消</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="core-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>使用 RestTemplate 消费 RESTful 服务</h1><div class="post-meta text-muted"><div> 作者 <em> <a href="https://github.com/happymaya">superhsc</a> </em></div><div class="d-flex"><div> <span> 发表于 <em class="timeago" data-ts="1525339920" data-toggle="tooltip" data-placement="bottom" data-tooltip-df="llll" > 2018-05-03 </em> </span> <span> 更新于 <em class="timeago" data-ts="1653599626" data-toggle="tooltip" data-placement="bottom" data-tooltip-df="llll" > 2022-05-27 </em> </span> <span class="readtime" data-toggle="tooltip" data-placement="bottom" title="3424 字"> <em>19 分钟</em>阅读</span></div></div></div><div class="post-content"><p>完成 Web 服务的构建后，接下来需要做的事情就是如何对服务进行消费。</p><h2 id="使用-resttemplate-访问-http-端点"><span class="mr-2">使用 RestTemplate 访问 HTTP 端点</span><a href="#使用-resttemplate-访问-http-端点" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2></h2><p>RestTemplate 是 Spring 提供的用于访问 RESTful 服务的客户端的模板工具类，它位于 org.springframework.web.client 包下。</p><p>在设计上，RestTemplate 完全满足 RESTful 架构风格的设计原则。相较传统 Apache 中的 HttpClient 客户端工具类，RestTemplate 在编码的简便性以及异常的处理等方面都做了很多改进。</p><p>创建一个 RestTemplate 对象，并通过该对象所提供的大量工具方法实现对远程 HTTP 端点的高效访问，如下文。</p><h3 id="创建-resttemplate"><span class="mr-2">创建 RestTemplate</span><a href="#创建-resttemplate" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>想创建一个 RestTemplate 对象，最简单且最常见的方法是直接 new 一个该类的实例，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre><span class="nd">@Bean</span>
+<span class="kd">public</span> <span class="nc">RestTemplate</span> <span class="nf">restTemplate</span><span class="o">()</span> <span class="o">{</span>
+	<span class="k">return</span> <span class="k">new</span> <span class="nf">RestTemplate</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>这里我创建了一个 RestTemplate 实例，并通过 @Bean 注解将其注入 Spring 容器中。</p><p>通過 RestTemplate 的无参构造函数，可以看到创建它的实例时，RestTemplate 都做下面的一下事情，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+</pre><td class="rouge-code"><pre>    <span class="kd">public</span> <span class="nf">RestTemplate</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">();</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">errorHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultResponseErrorHandler</span><span class="o">();</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">headersExtractor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RestTemplate</span><span class="o">.</span><span class="na">HeadersExtractor</span><span class="o">();</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">ByteArrayHttpMessageConverter</span><span class="o">());</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringHttpMessageConverter</span><span class="o">());</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">ResourceHttpMessageConverter</span><span class="o">(</span><span class="kc">false</span><span class="o">));</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">SourceHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Error</span> <span class="n">var2</span><span class="o">)</span> <span class="o">{</span>
+        <span class="o">}</span>
+
+        <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">AllEncompassingFormHttpMessageConverter</span><span class="o">());</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">romePresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">AtomFeedHttpMessageConverter</span><span class="o">());</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">RssChannelHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">jackson2XmlPresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">MappingJackson2XmlHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">jaxb2Present</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">Jaxb2RootElementHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">jackson2Present</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">MappingJackson2HttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">gsonPresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">GsonHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">jsonbPresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">JsonbHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">jackson2SmilePresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">MappingJackson2SmileHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">jackson2CborPresent</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">MappingJackson2CborHttpMessageConverter</span><span class="o">());</span>
+        <span class="o">}</span>
+
+        <span class="k">this</span><span class="o">.</span><span class="na">uriTemplateHandler</span> <span class="o">=</span> <span class="n">initUriTemplateHandler</span><span class="o">();</span>
+    <span class="o">}</span>
+</pre></table></code></div></div><p><strong>可以清楚地看到 RestTemplate 的无参构造函数只做了一件事情，添加了一批用于实现消息转换的 HttpMessageConverter 对象。</strong></p><p>通过 RestTemplate 发送的请求和获取的响应，都是以 JSON 作为序列化方式，而调用后续的getForObject、exchange 等方法时所传入的参数及获取的结果都是普通的 Java 对象，我们就是通过使用 RestTemplate 中的 HttpMessageConverter 自动做了这一层转换操作。</p><p>此外， RestTemplate 还有另外一个更强大的有参构造函数，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="nc">ClientHttpRequestFactory</span> <span class="n">requestFactory</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">setRequestFactory</span><span class="o">(</span><span class="n">requestFactory</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>从以上代码中，可以看到这个构造函数一方面调用了前面的无参构造函数，另一方面可以设置一个 ClientHttpRequestFactory 接口。</p><p>而基于这个 ClientHttpRequestFactory 接口的各种实现类，可以对 RestTemplate 中的行为进行精细化控制。</p><p>这方面典型的应用场景是设置 HTTP 请求的超时时间等属性，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre><td class="rouge-code"><pre><span class="nd">@Bean</span>
+<span class="kd">public</span> <span class="nc">RestTemplate</span> <span class="nf">customRestTemplate</span><span class="o">()</span> <span class="o">{</span>
+	<span class="nc">HttpComponentsClientHttpRequestFactory</span> <span class="n">httpRequestFactory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpComponentsClientHttpRequestFactory</span><span class="o">();</span>
+	<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setConnectionRequestTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+	<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setConnectTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+	<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setReadTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+
+	<span class="k">return</span> <span class="k">new</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="n">httpRequestFactory</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>这里我创建了一个 HttpComponentsClientHttpRequestFactory 工厂类，它是 ClientHttpRequestFactory 接口的一个实现类。通过设置连接请求超时时间 ConnectionRequestTimeout、连接超时时间 ConnectTimeout 等属性，从而对 RestTemplate 的默认行为进行了定制化处理。</p><h3 id="使用-resttemplate-访问-web-服务"><span class="mr-2">使用 RestTemplate 访问 Web 服务</span><a href="#使用-resttemplate-访问-web-服务" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>在远程服务访问上，RestTemplate 内置了一批常用的工具方法，可以根据 HTTP 的语义以及 RESTful 的设计原则对这些工具方法进行分类，如下表所示：</p><div class="table-wrapper"><table><thead><tr><th>HTTP 方法<th>RestTemplate 方法组<tbody><tr><td>GET<td>getForObject/getForEntity<tr><td>POST<td>postForLocation/postForObject/postForEntity<tr><td>PUT<td>put<tr><td>DELETE<td>delete<tr><td>Header<td>headForHeaders<tr><td>不限<td>exchange/execute</table></div><p>接下来，基于该表对 RestTemplate 中的工具方法进行练习。不过在此之前，需要先了解请求的 URL。</p><p>在一个 Web 请求中，可以通过请求路径携带参数。在使用 RestTemplate 时，也可以在它的 URL 中嵌入路径变量，示例代码如下所示：</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>("http://localhost:8082/account/{id}", 1)
+</pre></table></code></div></div><p>这里我对 account-service 提供的一个端点进行了参数设置：定义了一个拥有路径变量名为 id 的 URL，实际访问时，将该变量值设置为 1。</p><p>其实，在URL 中也可以包含多个路径变量，因为 Java 支持不定长参数语法，多个路径变量的赋值可以按照参数依次设置。</p><p>如下所示的代码中，在 URL 中使用了 pageSize 和 pageIndex 这两个路径变量进行分页操作，实际访问时它们将被替换为 20 和 2。</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>("http://localhost:8082/account/{pageSize}/{pageIndex}", 20, 2)
+</pre></table></code></div></div><p>而路径变量也可以通过 Map 进行赋值。如下所示的代码同样定义了拥有路径变量 pageSize 和 pageIndex 的 URL，但实际访问时，会从 uriVariables 这个 Map 对象中获取值进行替换，从而得到最终的请求路径为 <code class="language-plaintext highlighter-rouge">http://localhost:8082/account/20/2</code>。</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre>Map&lt;String, Object&gt; uriVariables = new HashMap&lt;&gt;();
+uriVariables.put("pageSize", 20);
+uriVariables.put("pageIndex", 2);
+webClient.getForObject() ("http://localhost:8082/account/{pageSize}/{pageIndex}", Account.class, uriVariables);
+</pre></table></code></div></div><p>请求 URL 一旦准备好了，就可以使用 RestTemplates 所提供的一系列工具方法完成远程服务的访问。</p><h3 id="get-方法组"><span class="mr-2">GET 方法组</span><a href="#get-方法组" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>先来看一下 get 方法组，它包括 getForObject 和 getForEntity 这两组方法，每组各有三个方法。</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre><td class="rouge-code"><pre>    <span class="nd">@Nullable</span>
+    <span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">getForObject</span><span class="o">(</span><span class="nc">String</span> <span class="n">url</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseType</span><span class="o">,</span> <span class="nc">Object</span><span class="o">...</span> <span class="n">uriVariables</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RestClientException</span> <span class="o">{</span>
+        <span class="nc">RequestCallback</span> <span class="n">requestCallback</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">acceptHeaderRequestCallback</span><span class="o">(</span><span class="n">responseType</span><span class="o">);</span>
+        <span class="nc">HttpMessageConverterExtractor</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseExtractor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpMessageConverterExtractor</span><span class="o">(</span><span class="n">responseType</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">getMessageConverters</span><span class="o">(),</span> <span class="k">this</span><span class="o">.</span><span class="na">logger</span><span class="o">);</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="n">requestCallback</span><span class="o">,</span> <span class="n">responseExtractor</span><span class="o">,</span> <span class="o">(</span><span class="nc">Object</span><span class="o">[])</span><span class="n">uriVariables</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Nullable</span>
+    <span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">getForObject</span><span class="o">(</span><span class="nc">String</span> <span class="n">url</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseType</span><span class="o">,</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="o">?&gt;</span> <span class="n">uriVariables</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RestClientException</span> <span class="o">{</span>
+        <span class="nc">RequestCallback</span> <span class="n">requestCallback</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">acceptHeaderRequestCallback</span><span class="o">(</span><span class="n">responseType</span><span class="o">);</span>
+        <span class="nc">HttpMessageConverterExtractor</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseExtractor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpMessageConverterExtractor</span><span class="o">(</span><span class="n">responseType</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">getMessageConverters</span><span class="o">(),</span> <span class="k">this</span><span class="o">.</span><span class="na">logger</span><span class="o">);</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="n">requestCallback</span><span class="o">,</span> <span class="n">responseExtractor</span><span class="o">,</span> <span class="o">(</span><span class="nc">Map</span><span class="o">)</span><span class="n">uriVariables</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Nullable</span>
+    <span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">getForObject</span><span class="o">(</span><span class="no">URI</span> <span class="n">url</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseType</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RestClientException</span> <span class="o">{</span>
+        <span class="nc">RequestCallback</span> <span class="n">requestCallback</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">acceptHeaderRequestCallback</span><span class="o">(</span><span class="n">responseType</span><span class="o">);</span>
+        <span class="nc">HttpMessageConverterExtractor</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseExtractor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpMessageConverterExtractor</span><span class="o">(</span><span class="n">responseType</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">getMessageConverters</span><span class="o">(),</span> <span class="k">this</span><span class="o">.</span><span class="na">logger</span><span class="o">);</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="n">requestCallback</span><span class="o">,</span> <span class="n">responseExtractor</span><span class="o">);</span>
+    <span class="o">}</span>
+</pre></table></code></div></div><p>从以上方法定义上，不难看出它们之间的区别只是传入参数的处理方式不同。</p><p>这里，注意到第三个 getForObject 方法只有两个参数（后面的两个 getForObject 方法分别支持不定参数以及一个 Map 对象），如果我们想在访问路径上添加一个参数，则需要我们构建一个独立的 URI 对象，示例如下代码所示：</p><p>例如，getForObject 方法组中的三个方法如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre><span class="nc">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">"http://localhost:8080/hello?name="</span> <span class="o">+</span> <span class="nc">URLEncoder</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="s">"UTF-8"</span><span class="o">);</span>
+<span class="no">URI</span> <span class="n">uri</span> <span class="o">=</span> <span class="no">URI</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+</pre></table></code></div></div><p>比如 AccountController，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre><td class="rouge-code"><pre><span class="nd">@RestController</span>
+<span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"accounts"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">AccountController</span> <span class="o">{</span>
+
+<span class="err">   </span> <span class="nd">@GetMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">"/{accountId}"</span><span class="o">)</span>
+<span class="err">   </span> <span class="kd">public</span> <span class="nc">Account</span> <span class="nf">getAccountById</span><span class="o">(</span><span class="nd">@PathVariable</span><span class="o">(</span><span class="s">"accountId"</span><span class="o">)</span> <span class="nc">Long</span> <span class="n">accountId</span><span class="o">)</span> <span class="o">{</span>
+	    <span class="err">…</span>
+<span class="err">   </span> <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>对于上述端点，我们可以通过 getForObject 方法构建一个 HTTP 请求来获取目标 Account 对象，实现代码如下所示：</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>Account result = restTemplate.getForObject("http://localhost:8082/accounts/{accountId}", Account.class, accountId);
+</pre></table></code></div></div><p>在以上代码中，可以看到 getForEntity 方法的返回值是一个 ResponseEntity 对象，在这个对象中还包含了 HTTP 消息头等信息，而 getForObject 方法返回的只是业务对象本身。这是这两个方法组的主要区别，可以根据个人需要自行选择。</p><h3 id="post-方法组"><span class="mr-2">POST 方法组</span><a href="#post-方法组" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p><strong>与 GET 请求相比，RestTemplate 中的 POST 请求除提供了 postForObject 和 postForEntity 方法组以外，还额外提供了一组 postForLocation 方法。</strong></p><p>假设有如下所示的 OrderController ，它暴露了一个用于添加 Order 的端点。</p><p>那么，通过 postForEntity 发送 POST 请求的示例如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="nc">Order</span> <span class="n">order</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Order</span><span class="o">();</span>
+<span class="n">order</span><span class="o">.</span><span class="na">setOrderNumber</span><span class="o">(</span><span class="s">"Order0001"</span><span class="o">);</span>
+<span class="n">order</span><span class="o">.</span><span class="na">setDeliveryAddress</span><span class="o">(</span><span class="s">"DemoAddress"</span><span class="o">);</span>
+<span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">Order</span><span class="o">&gt;</span> <span class="n">responseEntity</span> <span class="o">=</span> <span class="n">restTemplate</span><span class="o">.</span><span class="na">postForEntity</span><span class="o">(</span><span class="s">"http://localhost:8082/orders"</span><span class="o">,</span> <span class="n">order</span><span class="o">,</span> <span class="nc">Order</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+<span class="k">return</span> <span class="n">responseEntity</span><span class="o">.</span><span class="na">getBody</span><span class="o">();</span>
+</pre></table></code></div></div><p>从以上代码中可以看到，构建了一个 Order 实体，通过 postForEntity 传递给了 OrderController 所暴露的端点，并获取了该端点的返回值。（特殊说明：postForObject 的操作方式也与此类似。）</p><p>掌握了 get 和 post 方法组后，理解 put 方法组和 delete 方法组就会非常容易了。其中 put 方法组与 post 方法组相比只是操作语义上的差别，而 delete 方法组的使用过程也和 get 方法组类似。</p><h3 id="exchange-方法组"><span class="mr-2">exchange 方法组</span><a href="#exchange-方法组" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p><strong>对于 RestTemplate 而言，exchange 是一个通用且统一的方法，它既能发送 GET 和 POST 请求，也能用于发送其他各种类型的请求。</strong></p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre>    <span class="kd">public</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nf">exchange</span><span class="o">(</span><span class="nc">String</span> <span class="n">url</span><span class="o">,</span> <span class="nc">HttpMethod</span> <span class="n">method</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">HttpEntity</span><span class="o">&lt;?&gt;</span> <span class="n">requestEntity</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">responseType</span><span class="o">,</span> <span class="nc">Object</span><span class="o">...</span> <span class="n">uriVariables</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RestClientException</span> <span class="o">{</span>
+        <span class="nc">RequestCallback</span> <span class="n">requestCallback</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">httpEntityCallback</span><span class="o">(</span><span class="n">requestEntity</span><span class="o">,</span> <span class="n">responseType</span><span class="o">);</span>
+        <span class="nc">ResponseExtractor</span><span class="o">&lt;</span><span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;&gt;</span> <span class="n">responseExtractor</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">responseEntityExtractor</span><span class="o">(</span><span class="n">responseType</span><span class="o">);</span>
+        <span class="k">return</span> <span class="o">(</span><span class="nc">ResponseEntity</span><span class="o">)</span><span class="n">nonNull</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">method</span><span class="o">,</span> <span class="n">requestCallback</span><span class="o">,</span> <span class="n">responseExtractor</span><span class="o">,</span> <span class="n">uriVariables</span><span class="o">));</span>
+    <span class="o">}</span>
+</pre></table></code></div></div><p>注意，这里的 requestEntity 变量是一个 HttpEntity 对象，它封装了请求头和请求体，而 responseType 用于指定返回数据类型。 假如前面的 OrderController 中存在一个根据订单编号 OrderNumber 获取 Order 信息的端点，那么我们使用 exchange 方法发起请求的代码就变成这样了，如下代码所示。</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre><span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">Order</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">restTemplate</span><span class="o">.</span><span class="na">exchange</span><span class="o">(</span><span class="s">"http://localhost:8082/orders/{orderNumber}"</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="nc">Order</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+</pre></table></code></div></div><p>而比较复杂的一种使用方式是分别设置 HTTP 请求头及访问参数，并发起远程调用，示例代码如下所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="c1">//设置 HTTP Header</span>
+<span class="nc">HttpHeaders</span> <span class="n">headers</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpHeaders</span><span class="o">();</span>
+<span class="n">headers</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="nc">MediaType</span><span class="o">.</span><span class="na">APPLICATION_JSON_UTF8</span><span class="o">);</span>
+
+<span class="c1">//设置访问参数</span>
+<span class="nc">HashMap</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+<span class="n">params</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"orderNumber"</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+
+<span class="c1">//设置请求 Entity</span>
+<span class="nc">HttpEntity</span> <span class="n">entity</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpEntity</span><span class="o">&lt;&gt;(</span><span class="n">params</span><span class="o">,</span> <span class="n">headers</span><span class="o">);</span>
+<span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">Order</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">restTemplate</span><span class="o">.</span><span class="na">exchange</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="n">entity</span><span class="o">,</span> <span class="nc">Order</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</pre></table></code></div></div><h2 id="resttemplate-其他使用技巧"><span class="mr-2">RestTemplate 其他使用技巧</span><a href="#resttemplate-其他使用技巧" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2></h2><p>实现常规的 HTTP 请求，RestTemplate 还有一些高级用法，如<strong>指定消息转换器</strong>、<strong>设置拦截器</strong>和<strong>处理异常</strong>等。</p><h3 id="指定消息转换器"><span class="mr-2">指定消息转换器</span><a href="#指定消息转换器" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>在 RestTemplate 中，实际上还存在第三个构造函数，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">HttpMessageConverter</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">messageConverters</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">errorHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultResponseErrorHandler</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">headersExtractor</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RestTemplate</span><span class="o">.</span><span class="na">HeadersExtractor</span><span class="o">();</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">validateConverters</span><span class="o">(</span><span class="n">messageConverters</span><span class="o">);</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">messageConverters</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">messageConverters</span><span class="o">);</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">uriTemplateHandler</span> <span class="o">=</span> <span class="n">initUriTemplateHandler</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>从以上代码中不难看出，可以通过传入一组 HttpMessageConverter 来初始化 RestTemplate，这也为消息转换器的定制提供了途径。</p><p>假如，希望把支持 Gson 的 GsonHttpMessageConverter 加载到 RestTemplate 中，就可以使用如下所示的代码。</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre><td class="rouge-code"><pre><span class="nd">@Bean</span>
+<span class="kd">public</span> <span class="nc">RestTemplate</span> <span class="nf">restTemplate</span><span class="o">()</span> <span class="o">{</span>
+	<span class="nc">List</span><span class="o">&lt;</span><span class="nc">HttpMessageConverter</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">messageConverters</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">HttpMessageConverter</span><span class="o">&lt;?&gt;&gt;();</span>
+	<span class="n">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">GsonHttpMessageConverter</span><span class="o">());</span>
+	<span class="k">return</span> <span class="k">new</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="n">messageConverters</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>原则上，可以根据需要实现各种自定义的 HttpMessageConverter ，并通过以上方法完成对 RestTemplate 的初始化。</p><h3 id="设置拦截器"><span class="mr-2">设置拦截器</span><a href="#设置拦截器" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>如果想对请求做一些通用拦截设置，那么可以使用拦截器。不过，使用拦截器之前，首先需要实现 ClientHttpRequestInterceptor 接口。</p><p>这方面最典型的应用场景是在 Spring Cloud 中通过 <code class="language-plaintext highlighter-rouge">@LoadBalanced</code> 注解为 RestTemplate 添加负载均衡机制。可以在 LoadBalanceAutoConfiguration 自动配置类中找到如下代码。</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="nc">RestTemplateCustomizer</span> <span class="nf">restTemplateOnCustomizer</span> <span class="o">(</span><span class="kd">final</span> <span class="nc">LoadBalancerInterceptor</span> <span class="n">loadBalanceInterceptor</span><span class="o">)</span> <span class="o">{</span>
+	<span class="k">return</span> <span class="n">restTemplate</span> <span class="o">-&gt;</span> <span class="o">{</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">ClientHttpRequestInterceptor</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span>
+		<span class="n">restTemplate</span><span class="o">.</span><span class="na">getInterceptors</span><span class="o">());</span>
+		<span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">loadBalanceInterceptor</span><span class="o">);</span>
+		<span class="n">restTemplate</span><span class="o">.</span><span class="na">setInterceptors</span><span class="o">(</span><span class="n">list</span><span class="o">);</span>
+	<span class="o">};</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h3 id="处理异常"><span class="mr-2">处理异常</span><a href="#处理异常" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3></h3><p>请求状态码不是返回 200 时，RestTemplate 在默认情况下会抛出异常，并中断接下来的操作，如果我们不想采用这个处理过程，那么就需要覆盖默认的 ResponseErrorHandler。示例代码结构如下所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="kt">void</span> <span class="nf">restTemplateHandlerErrot</span> <span class="o">()</span> <span class="o">{</span>
+	<span class="nc">RestTemplate</span> <span class="n">restTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RestTemplate</span><span class="o">();</span>
+
+	<span class="nc">ResponseErrorHandler</span> <span class="n">responseErrorHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ResponseErrorHandler</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">hasError</span><span class="o">(</span><span class="nc">ClientHttpResponse</span> <span class="n">clientHttpResponse</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleError</span><span class="o">(</span><span class="nc">ClientHttpResponse</span> <span class="n">clientHttpResponse</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+			<span class="c1">// 添加定制化的异常处理代码</span>
+		<span class="o">}</span>
+	<span class="o">};</span>
+	<span class="n">restTemplate</span><span class="o">.</span><span class="na">setErrorHandler</span><span class="o">(</span><span class="n">responseErrorHandler</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>在上面的 handleError 方法中，可以实现任何自己想控制的异常处理代码。</p><h2 id="在-spring-css-中的实现服务交互"><span class="mr-2">在 spring-css 中的实现服务交互</span><a href="#在-spring-css-中的实现服务交互" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2></h2><p>在其中的 customer-service 的 CustomerService 类中用于完成与 account-service 和 order-service 进行集成的 generateCustomerTicket 方法的代码结构，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="nc">CustomerTicket</span> <span class="nf">generateCustomerTicket</span><span class="o">(</span><span class="nc">Long</span> <span class="n">accountId</span><span class="o">,</span> <span class="nc">String</span> <span class="n">orderNumber</span><span class="o">)</span> <span class="o">{</span>
+
+	<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Generate customer ticket record with account: {} and order: {}"</span><span class="o">,</span> <span class="n">accountId</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+
+	<span class="c1">// 创建客服工单对象</span>
+	<span class="nc">CustomerTicket</span> <span class="n">customerTicket</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CustomerTicket</span><span class="o">();</span>
+
+	<span class="c1">// 从本地数据库中获取Account信息</span>
+	<span class="nc">LocalAccount</span> <span class="n">account</span> <span class="o">=</span> <span class="n">getAccountById</span><span class="o">(</span><span class="n">accountId</span><span class="o">);</span>
+	<span class="k">if</span> <span class="o">(</span><span class="n">account</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="n">customerTicket</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="c1">// 从远程 order-service 中获取 Order 信息</span>
+	<span class="nc">OrderMapper</span> <span class="n">order</span> <span class="o">=</span> <span class="n">getRemoteOrderByOrderNumber</span><span class="o">(</span><span class="n">orderNumber</span><span class="o">);</span>
+	<span class="k">if</span> <span class="o">(</span><span class="n">order</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="n">customerTicket</span><span class="o">;</span>
+	<span class="o">}</span>
+	<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Get remote order: {} is successful"</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+
+	<span class="c1">// 创建并保存CustomerTicket信息</span>
+	<span class="n">customerTicket</span><span class="o">.</span><span class="na">setAccountId</span><span class="o">(</span><span class="n">accountId</span><span class="o">);</span>
+	<span class="n">customerTicket</span><span class="o">.</span><span class="na">setOrderNumber</span><span class="o">(</span><span class="n">order</span><span class="o">.</span><span class="na">getOrderNumber</span><span class="o">());</span>
+	<span class="n">customerTicket</span><span class="o">.</span><span class="na">setCreateTime</span><span class="o">(</span><span class="k">new</span> <span class="nc">Date</span><span class="o">());</span>
+	<span class="n">customerTicket</span><span class="o">.</span><span class="na">setDescription</span><span class="o">(</span><span class="s">"TestCustomerTicket"</span><span class="o">);</span>
+	<span class="n">customerTicketRepository</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">customerTicket</span><span class="o">);</span>
+
+	<span class="c1">// 添加Metrics</span>
+	<span class="c1">// customerTicketCounterService.counter("customerTicket.created.count");</span>
+	<span class="n">meterRegistry</span><span class="o">.</span><span class="na">summary</span><span class="o">(</span><span class="s">"customerTickets.generated.count"</span><span class="o">).</span><span class="na">record</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+		
+	<span class="k">return</span> <span class="n">customerTicket</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>这里以 getRemoteOrderByOrderNumber 方法为例，来对它的实现过程进行展开，getRemoteOrderByOrderNumber 方法定义代码如下：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+</pre><td class="rouge-code"><pre><span class="nd">@Autowired</span>
+<span class="kd">private</span> <span class="nc">OrderClient</span> <span class="n">orderClient</span><span class="o">;</span>
+
+<span class="kd">private</span> <span class="nc">OrderMapper</span> <span class="nf">getRemoteOrderByOrderNumber</span><span class="o">(</span><span class="nc">String</span> <span class="n">orderNumber</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="n">orderClient</span><span class="o">.</span><span class="na">getOrderByOrderNumber</span><span class="o">(</span><span class="n">orderNumber</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>getRemoteAccountById 方法的实现过程也类似。</p><p>接下来构建了一个 OrderClient 类完成对 order-service 的远程访问，如下代码所示：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+</pre><td class="rouge-code"><pre><span class="nd">@Component</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">OrderClient</span> <span class="o">{</span>
+
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Logger</span> <span class="n">logger</span> <span class="o">=</span> <span class="nc">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="nc">OrderClient</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+	<span class="nd">@Autowired</span>
+	<span class="nc">RestTemplate</span> <span class="n">restTemplate</span><span class="o">;</span>
+
+	<span class="kd">public</span> <span class="nc">OrderMapper</span> <span class="nf">getOrderByOrderNumber</span><span class="o">(</span><span class="nc">String</span> <span class="n">orderNumber</span><span class="o">)</span> <span class="o">{</span>
+
+		<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Get order: {}"</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+
+		<span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">OrderMapper</span><span class="o">&gt;</span> <span class="n">restExchange</span> <span class="o">=</span> <span class="n">restTemplate</span><span class="o">.</span><span class="na">exchange</span><span class="o">(</span>
+				<span class="s">"http://localhost:8083/orders/{orderNumber}"</span><span class="o">,</span> <span class="nc">HttpMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span>
+				<span class="nc">OrderMapper</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">orderNumber</span><span class="o">);</span>
+
+		 <span class="nc">OrderMapper</span> <span class="n">result</span> <span class="o">=</span> <span class="n">restExchange</span><span class="o">.</span><span class="na">getBody</span><span class="o">();</span>
+
+		<span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="nd">@Bean</span>
+	<span class="kd">public</span> <span class="nc">RestTemplate</span> <span class="nf">restTemplate</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">List</span><span class="o">&lt;</span><span class="nc">HttpMessageConverter</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">messageConverters</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;</span><span class="nc">HttpMessageConverter</span><span class="o">&lt;?&gt;&gt;();</span>
+		<span class="n">messageConverters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">GsonHttpMessageConverter</span><span class="o">());</span>
+		<span class="k">return</span> <span class="k">new</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="n">messageConverters</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="nd">@Bean</span>
+	<span class="kd">public</span> <span class="nc">RestTemplate</span> <span class="nf">customRestTemplate</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">HttpComponentsClientHttpRequestFactory</span> <span class="n">httpRequestFactory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HttpComponentsClientHttpRequestFactory</span><span class="o">();</span>
+		<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setConnectionRequestTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+		<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setConnectTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+		<span class="n">httpRequestFactory</span><span class="o">.</span><span class="na">setReadTimeout</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
+
+		<span class="k">return</span> <span class="k">new</span> <span class="nf">RestTemplate</span><span class="o">(</span><span class="n">httpRequestFactory</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">restTemplateHandlerErrot</span> <span class="o">()</span> <span class="o">{</span>
+		<span class="nc">RestTemplate</span> <span class="n">restTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">RestTemplate</span><span class="o">();</span>
+
+		<span class="nc">ResponseErrorHandler</span> <span class="n">responseErrorHandler</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ResponseErrorHandler</span><span class="o">()</span> <span class="o">{</span>
+			<span class="nd">@Override</span>
+			<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">hasError</span><span class="o">(</span><span class="nc">ClientHttpResponse</span> <span class="n">clientHttpResponse</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+				<span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+			<span class="o">}</span>
+
+			<span class="nd">@Override</span>
+			<span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleError</span><span class="o">(</span><span class="nc">ClientHttpResponse</span> <span class="n">clientHttpResponse</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+				<span class="c1">// 添加定制化的异常处理代码</span>
+			<span class="o">}</span>
+		<span class="o">};</span>
+
+		<span class="n">restTemplate</span><span class="o">.</span><span class="na">setErrorHandler</span><span class="o">(</span><span class="n">responseErrorHandler</span><span class="o">);</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+</pre></table></code></div></div><p>注意：这里我注入了一个 RestTemplate 对象，并通过它的 exchange 方法完成对远程 order-serivce 的请求过程。且这里的返回对象是一个 OrderMapper，而不是一个 Order 对象。最后，RestTemplate 内置的 HttpMessageConverter 完成 OrderMapper 与 Order 之间的自动映射。</p><p>事实上，OrderMapper 与 Order 对象的内部字段一一对应，它们分别位于两个不同的代码工程中，为了以示区别我们才故意在命名上做了区分。</p><blockquote><p>在使用 RestTemplate 时，如何实现对请求超时时间等控制逻辑的定制化处理？</p></blockquote></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/spring/'>Spring</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/springboot/" class="post-tag no-text-decoration" >SpringBoot</a> <a href="/tags/resttemplate/" class="post-tag no-text-decoration" >RestTemplate</a> <a href="/tags/restful/" class="post-tag no-text-decoration" >RESTful</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> 本文由作者按照 <a href="https://creativecommons.org/licenses/by/4.0/"> CC BY 4.0 </a> 进行授权</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">分享</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=使用 RestTemplate 消费 RESTful 服务 - ThinkerWalker&amp;url=/posts/rest-template-restful/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=使用 RestTemplate 消费 RESTful 服务 - ThinkerWalker&amp;u=/posts/rest-template-restful/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://t.me/share/url?url=/posts/rest-template-restful/&amp;text=使用 RestTemplate 消费 RESTful 服务 - ThinkerWalker" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i id="copy-link" class="fa-fw fas fa-link small" data-toggle="tooltip" data-placement="top" title="分享链接" data-title-succeed="链接已复制！"> </i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted"><div class="access"><div id="access-lastmod" class="post"><div class="panel-heading">最近更新</div><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/posts/use-spring-security-to-build-a-user-authentication-system/">Spring Security 的配置体系</a><li><a href="/posts/spring-data-jpa-test/">利用单元测试和集成测试</a><li><a href="/posts/query-annotation/">Spring Data JPA - @Query</a><li><a href="/posts/defining-query-methods/">Spring Data JPA - Defining Query Methods 的命名语法与参数</a><li><a href="/posts/cache-redis-02/">Redis 的数据类型</a></ul></div><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/thread/">thread</a> <a class="post-tag" href="/tags/jvm/">JVM</a> <a class="post-tag" href="/tags/design-pattern/">Design Pattern</a> <a class="post-tag" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a> <a class="post-tag" href="/tags/architecture-design/">Architecture Design</a> <a class="post-tag" href="/tags/backend-system/">Backend System</a> <a class="post-tag" href="/tags/devops/">DevOps</a> <a class="post-tag" href="/tags/spring-security/">Spring Security</a> <a class="post-tag" href="/tags/springboot/">SpringBoot</a> <a class="post-tag" href="/tags/cache/">Cache</a></div></div></div><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.js"></script><div id="toc-wrapper" class="pl-0 pr-4 mb-5"><div class="panel-heading pl-3 pt-2 mb-2">文章内容</div><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="tail-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>相关文章</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/rest-template-remote/"><div class="card-body"> <em class="timeago small" data-ts="1525685520" > 2018-05-07 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>RestTemplate 远程调用实现原理</h3><div class="text-muted small"><p> RestTemplate 访问 HTTP 端点的使用方法，它涉及 RestTemplate 初始化、发起请求及获取响应结果等核心环节。 初始化 RestTemplate 实例 通过 RestTemplate 提供的几个构造函数对 RestTemplate 进行初始化。在分析这些构造函数之前，有必要先看一下 RestTemplate 类的定义，如下代码所示： 1 public class ...</p></div></div></a></div><div class="card"> <a href="/posts/restful-web/"><div class="card-body"> <em class="timeago small" data-ts="1525944720" > 2018-05-10 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>构建 RESTful 风格的 Web 服务</h3><div class="text-muted small"><p> 创建 RESTful 服务 在当下的分布式系统及微服务架构中，RESTful 风格是一种主流的 Web 服务表现方式。首先来理解什么是 RESTful 服务。 理解 RESTful 架构风格 REST（Representational State Transfer，表述性状态转移）本质上只是一种架构风格而不是一种规范。 这种架构风格把位于服务器端的访问入口看作一个资源，每个资源都使用...</p></div></div></a></div><div class="card"> <a href="/posts/spring-web-application/"><div class="card-body"> <em class="timeago small" data-ts="1519983120" > 2018-03-02 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>剖析一个 Spring Web 应用</h3><div class="text-muted small"><p> 在典型的 Web 应用程序中，前后端通常采用基于 HTTP 协议完成请求和响应。 HTTP 请求响应过程如下： HTTP 请求； URL 地址映射； HHTP 请求的参数构建； 对象（数据）序列化； 各个服务自身内部的业务逻辑处理； 对象（数据）反序列化； HTTP 响应 基于 Spring MVC 完成上述开发流程所需要的开发步骤如下： 使用 w...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/service-test/" class="btn btn-outline-primary" prompt="上一篇"><p>使用 Spring 测试 Web 服务层组件</p></a> <a href="/posts/rest-template-remote/" class="btn btn-outline-primary" prompt="下一篇"><p>RestTemplate 远程调用实现原理</p></a></div></div></div></div><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center text-muted"><div class="footer-left"><p class="mb-0"> © 2022 <a href="https://twitter.com/happymaya">superhsc</a>. <span data-toggle="tooltip" data-placement="top" title="除非另有说明，本网站上的博客文章均由作者按照知识共享署名 4.0 国际 (CC BY 4.0) 许可协议进行授权。">保留部分权利。</span></p></div><div class="footer-right"><p class="mb-0"> 本站由 <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> 生成，采用 <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> 主题。</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-sm-11 post-content"><div id="search-hints"><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/thread/">thread</a> <a class="post-tag" href="/tags/jvm/">JVM</a> <a class="post-tag" href="/tags/design-pattern/">Design Pattern</a> <a class="post-tag" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a> <a class="post-tag" href="/tags/architecture-design/">Architecture Design</a> <a class="post-tag" href="/tags/backend-system/">Backend System</a> <a class="post-tag" href="/tags/devops/">DevOps</a> <a class="post-tag" href="/tags/spring-security/">Spring Security</a> <a class="post-tag" href="/tags/springboot/">SpringBoot</a> <a class="post-tag" href="/tags/cache/">Cache</a></div></div></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"> {categories} {tags}</div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">搜索结果为空</p>', templateMiddleware: function(prop, value, template) { if (prop === 'categories') { if (value === '') { return `${value}`; } else { return `<div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`; } } if (prop === 'tags') { if (value === '') { return `${value}`; } else { return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`; } } } }); </script> <script src="https://cdn.jsdelivr.net/combine/npm/magnific-popup@1/dist/jquery.magnific-popup.min.js,npm/lozad/dist/lozad.min.js,npm/clipboard@2/dist/clipboard.min.js"></script> <script src="https://cdn.jsdelivr.net/combine/npm/dayjs@1/dayjs.min.js,npm/dayjs@1/locale/zh.min.js,npm/dayjs@1/plugin/relativeTime.min.js,npm/dayjs@1/plugin/localizedFormat.min.js"></script> <script defer src="/assets/js/dist/post.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.bundle.min.js"></script> <script defer src="/app.js"></script>

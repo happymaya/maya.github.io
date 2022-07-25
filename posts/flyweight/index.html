@@ -1,0 +1,191 @@
+<!DOCTYPE html><html lang="zh-CN" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="generator" content="Jekyll v4.2.2" /><meta property="og:title" content="享元模式：通过共享对象减少内存加载消耗" /><meta name="author" content="superhsc" /><meta property="og:locale" content="zh_CN" /><meta name="description" content="享元模式的原理和实现都很简单，但是应用场景却相对狭窄，它和缓存模式、池化模式有所联系，却又有不同。" /><meta property="og:description" content="享元模式的原理和实现都很简单，但是应用场景却相对狭窄，它和缓存模式、池化模式有所联系，却又有不同。" /><link rel="canonical" href="/posts/flyweight/" /><meta property="og:url" content="/posts/flyweight/" /><meta property="og:site_name" content="ThinkerWalker" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2018-02-12T14:18:32+00:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="享元模式：通过共享对象减少内存加载消耗" /><meta name="twitter:site" content="@happymaya" /><meta name="twitter:creator" content="@superhsc" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"superhsc"},"dateModified":"2022-07-23T19:54:23+00:00","datePublished":"2018-02-12T14:18:32+00:00","description":"享元模式的原理和实现都很简单，但是应用场景却相对狭窄，它和缓存模式、池化模式有所联系，却又有不同。","headline":"享元模式：通过共享对象减少内存加载消耗","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/flyweight/"},"url":"/posts/flyweight/"}</script><title>享元模式：通过共享对象减少内存加载消耗 | ThinkerWalker</title><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/site.webmanifest"><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico"><meta name="apple-mobile-web-app-title" content="ThinkerWalker"><meta name="application-name" content="ThinkerWalker"><meta name="msapplication-TileColor" content="#da532c"><meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://cdn.jsdelivr.net" ><link rel="dns-prefetch" href="https://cdn.jsdelivr.net" ><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@400;600;700;900&display=swap"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1/dist/magnific-popup.min.css"> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get MODE_ATTR() { return "data-mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } static get ID() { return "mode-toggle"; } constructor() { if (this.hasMode) { if (this.isDarkMode) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } let self = this; /* always follow the system prefers */ this.sysDarkPrefers.addEventListener("change", () => { if (self.hasMode) { if (self.isDarkMode) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } self.notify(); }); } /* constructor() */ get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; } get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } /* get the current mode on screen */ get modeStatus() { if (this.isDarkMode || (!this.hasMode && this.isSysDarkPrefer)) { return ModeToggle.DARK_MODE; } else { return ModeToggle.LIGHT_MODE; } } setDark() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_ATTR); sessionStorage.removeItem(ModeToggle.MODE_KEY); } /* Notify another plugins that the theme mode has changed */ notify() { window.postMessage({ direction: ModeToggle.ID, message: this.modeStatus }, "*"); } } /* ModeToggle */ const toggle = new ModeToggle(); function flipMode() { if (toggle.hasMode) { if (toggle.isSysDarkPrefer) { if (toggle.isLightMode) { toggle.clearMode(); } else { toggle.setLight(); } } else { if (toggle.isDarkMode) { toggle.clearMode(); } else { toggle.setDark(); } } } else { if (toggle.isSysDarkPrefer) { toggle.setLight(); } else { toggle.setDark(); } } toggle.notify(); } /* flipMode() */ </script><body data-spy="scroll" data-target="#toc" data-topbar-visible="true"><div id="sidebar" class="d-flex flex-column align-items-end"><div class="profile-wrapper text-center"><div id="avatar"> <a href="/" alt="avatar" class="mx-auto"> <img src=" https://images.happymaya.cn/assert/avatar/logo.png " alt="avatar" onerror="this.style.display='none'"> </a></div><div class="site-title mt-3"> <a href="/">ThinkerWalker</a></div><div class="site-subtitle font-italic">日拱一卒 功不唐捐</div></div><ul class="w-100"><li class="nav-item"> <a href="/" class="nav-link"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>首页</span> </a><li class="nav-item"> <a href="/categories/" class="nav-link"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>分类</span> </a><li class="nav-item"> <a href="/tags/" class="nav-link"> <i class="fa-fw fas fa-tag ml-xl-3 mr-xl-3 unloaded"></i> <span>标签</span> </a><li class="nav-item"> <a href="/archives/" class="nav-link"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>归档</span> </a><li class="nav-item"> <a href="/about/" class="nav-link"> <i class="fa-fw fas fa-info-circle ml-xl-3 mr-xl-3 unloaded"></i> <span>关于</span> </a></ul><div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center"> <button class="mode-toggle btn" aria-label="Switch Mode"> <i class="fas fa-adjust"></i> </button> <span class="icon-border"></span> <a href="https://github.com/happymaya" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github"></i> </a> <a href="https://twitter.com/happymaya" aria-label="twitter" target="_blank" rel="noopener"> <i class="fab fa-twitter"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['haoshichuan','foxmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> 首页 </a> </span> <span>享元模式：通过共享对象减少内存加载消耗</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> 文章</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" autocomplete="off" placeholder="搜索..."> </span> <span id="search-cancel" >取消</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="core-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>享元模式：通过共享对象减少内存加载消耗</h1><div class="post-meta text-muted"><div> 作者 <em> <a href="https://github.com/happymaya">superhsc</a> </em></div><div class="d-flex"><div> <span> 发表于 <em class="timeago" data-ts="1518445112" data-toggle="tooltip" data-placement="bottom" data-tooltip-df="llll" > 2018-02-12 </em> </span> <span> 更新于 <em class="timeago" data-ts="1658606063" data-toggle="tooltip" data-placement="bottom" data-tooltip-df="llll" > 2022-07-24 </em> </span> <span class="readtime" data-toggle="tooltip" data-placement="bottom" title="2841 字"> <em>15 分钟</em>阅读</span></div></div></div><div class="post-content"><p>享元模式的原理和实现都很简单，但是应用场景却相对狭窄，它和缓存模式、池化模式有所联系，却又有不同。</p><h1 id="模式原理">模式原理</h1><p>原始定义是：<strong>摒弃在每个对象中保存所有数据的方式，通过共享多个对象所共有的相同状态，从而让我们能在有限的内存容量中载入更多对象。</strong></p><p>从定义中可以发现，享元模式要解决的核心问题就是<strong>节约内存空间</strong>，使用的办法是<strong>找出相似对象之间的共有特征，然后复用这些特征</strong>。</p><p>UML 图是如何表示享元模式的，如下图： <img data-src="https://images.happymaya.cn/assert/design-patterns/flyweight.png" alt="FlyWeight UML 图" data-proofer-ignore></p><p>从这个 UML 图中，享元模式包含的关键角色有四个：</p><ol><li><strong>享元类（Flyweight）</strong>：定义了享元对象需要实现的公共操作方法。在该方法中会使用一个状态作为输入参数，也叫外部状态，由客户端保存，在运行时改变；<li><strong>享元工厂类（Flyweight Factory）</strong>：管理一个享元对象类的缓存池。它会存储享元对象之间需要传递的共有状态，比如，按照大写英文字母来作为状态标识，这种只在享元对象之间传递的方式就叫内部状态。同时，它还提供了一个通用方法 getFlyweight()，主要通过内部状态标识来获取享元对象；<li><strong>可共享的具体享元类（ConcreteFlyweight）</strong>：能够复用享元工厂内部状态并实现享元类公共操作的具体实现类；<li><strong>非共享的具体享元类（UnsharedConcreteFlyweight）</strong>：不复用享元工厂内部状态，但实现享元类的具体实现类。</ol><blockquote class="prompt-tip"><div><ul><li><strong>内部状态</strong>：不会随环境改变而改变的状态，俗称不可变对象。比如，在 Java 中 Integer 对象初始化就是缓存 -127 到 128 的值，无论怎么使用 Integer，这些值都不会变化。<li><strong>外部状态</strong>：随环境改变而改变的状态。通常是某个对象所独有的，不能被共享，因此，也只能由客户端保存。之所以需要外部状态就是因为客户端需要不同的定制化操作。</ul></div></blockquote><p>UML 对应的代码实现：</p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+</pre><td class="rouge-code"><pre><span class="cm">/**
+ * 享元类
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">FlyWeight</span> <span class="o">{</span>
+    <span class="kt">void</span> <span class="nf">operation</span><span class="o">(</span><span class="kt">int</span> <span class="n">state</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="cm">/**
+ * 享元工厂类
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FlyWeightFactory</span> <span class="o">{</span>
+
+    <span class="c1">// 定义一个池容器</span>
+    <span class="kd">public</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">FlyWeight</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+
+    <span class="kd">public</span> <span class="nf">FlyWeightFactory</span><span class="o">()</span> <span class="o">{</span>
+        <span class="c1">// 将对应的内部状态添加进去</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"A"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"A"</span><span class="o">));</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"B"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"B"</span><span class="o">));</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"C"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"C"</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 根据内部状态来查找值</span>
+    <span class="kd">public</span> <span class="nc">FlyWeight</span> <span class="nf">getFlyWeight</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">pool</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"==== 享元池中有，直接复用，key："</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">pool</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"==== 享元池中没有，重新创建并复用，key："</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+            <span class="nc">FlyWeight</span> <span class="n">flyWeightNew</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+            <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">flyWeightNew</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">flyWeightNew</span> <span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nc">FlyWeight</span> <span class="nf">getUnSharedFlyWeight</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">FlyWeight</span> <span class="n">flyWeight</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">UnSharedConcreteFlyweight</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"=== 创建不共享的对象，key: "</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">flyWeight</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">UnSharedConcreteFlyweight</span> <span class="kd">implements</span> <span class="nc">FlyWeight</span><span class="o">{</span>
+
+    <span class="kd">private</span> <span class="nc">String</span> <span class="n">uniqueKey</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">UnSharedConcreteFlyweight</span><span class="o">(</span><span class="nc">String</span> <span class="n">uniqueKey</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">uniqueKey</span> <span class="o">=</span> <span class="n">uniqueKey</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operation</span><span class="o">(</span><span class="kt">int</span> <span class="n">state</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"=== 使用不共享的对象，内部状态："</span><span class="o">+</span><span class="n">uniqueKey</span><span class="o">+</span><span class="s">"，外部状态："</span><span class="o">+</span><span class="n">state</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="cm">/**
+ * 享元工厂类
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FlyWeightFactory</span> <span class="o">{</span>
+
+    <span class="c1">// 定义一个池容器</span>
+    <span class="kd">public</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">FlyWeight</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+
+    <span class="kd">public</span> <span class="nf">FlyWeightFactory</span><span class="o">()</span> <span class="o">{</span>
+        <span class="c1">// 将对应的内部状态添加进去</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"A"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"A"</span><span class="o">));</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"B"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"B"</span><span class="o">));</span>
+        <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"C"</span><span class="o">,</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="s">"C"</span><span class="o">));</span>
+    <span class="o">}</span>
+
+    <span class="c1">// 根据内部状态来查找值</span>
+    <span class="kd">public</span> <span class="nc">FlyWeight</span> <span class="nf">getFlyWeight</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">pool</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">key</span><span class="o">))</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"==== 享元池中有，直接复用，key："</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">pool</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"==== 享元池中没有，重新创建并复用，key："</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+            <span class="nc">FlyWeight</span> <span class="n">flyWeightNew</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConcreteFlyweight</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+            <span class="n">pool</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">flyWeightNew</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">flyWeightNew</span> <span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nc">FlyWeight</span> <span class="nf">getUnSharedFlyWeight</span><span class="o">(</span><span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">FlyWeight</span> <span class="n">flyWeight</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">UnSharedConcreteFlyweight</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"=== 创建不共享的对象，key: "</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">flyWeight</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>这段代码实现非常简单，不过这里你可能会联想到缓存模式，比如，LRU 缓存模式。但这两者是完全不同的设计意图，它们的本质区别在于：<strong>享元模式要解决的问题是节约内存的空间大小，而缓存模式本质上是为了节省时间</strong>。 回到上面的代码分析中，能看出享元模式封装的变化有：</p><ul><li>对象内部状态的定义规则，比如，是通过字母共享状态，还是通过固定的数字来共享状态；<li>具体享元对象所实现的公共操作的逻辑。</ul><p>所以说，<strong>享元模式本质上是通过创建更多的可复用对象的共有特征来尽可能地减少创建重复对象的内存消耗</strong>。</p><h1 id="使用场景">使用场景</h1><p>一般来讲，享元模式常用的使用场景有以下几种：</p><ol><li>系统中存在大量重复创建的对象。比如，同一个商品的展示图片、详情介绍、文字介绍等，当自营商家系统调用或第三方商家调用时，商品系统可以使用同一个对象来节省内存空间；<li>可以使用外部特定的状态来控制使用的对象。比如，使用常用的中文汉字作为读取的标识，读取享元池中共享的多个中文汉字对象；<li>相关性很高并且可以复用的对象。比如，公司的组织结构人员基本信息、网站的分类信息列表等。</ol><p>在现实中，享元模式最常使用的场景是在<strong>编辑器软件</strong>中，比如，在一个文档中多次出现相同的图片，则只需要创建一个图片对象，通过在应用程序中设置该图片出现的位置，就可以实现该图片在不同地方多次重复显示的效果。 <strong>在 Java 中，享元模式一个常用的场景就是，使用数据类的包装类对象的 valueOf() 方法。比如，使用 Integer.valueOf() 方法时，实际的代码实现中有一个叫 IntegerCache 的静态类，它就是一直缓存了 -127 到 128 范围内的数值，如下代码所示，可以在 Java JDK 中的 Integer 类的源码中找到这段代码。</strong></p><div class="language-java highlighter-rouge"><div class="code-header"> <span data-label-text="Java"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="已复制！"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="kd">public</span> <span class="kd">static</span> <span class="nc">Integer</span> <span class="nf">valueOf</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="nc">IntegerCache</span><span class="o">.</span><span class="na">low</span> <span class="o">&amp;&amp;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="nc">IntegerCache</span><span class="o">.</span><span class="na">high</span><span class="o">)</span>
+        <span class="k">return</span> <span class="nc">IntegerCache</span><span class="o">.</span><span class="na">cache</span><span class="o">[</span><span class="n">i</span> <span class="o">+</span> <span class="o">(-</span><span class="nc">IntegerCache</span><span class="o">.</span><span class="na">low</span><span class="o">)];</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">Integer</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>享元模式本质上<strong>在使用时就是找到不可变的特征，并缓存起来，当类似对象使用时从缓存中读取，以达到节省内存空间的目的。</strong>比如，在需要承接大流量的系统中使用图片，都知道高清图片即便是压缩后占用的内存空间也很大，那么在使用图片时节省内存空间就是首要考虑的设计因素，而享元模式可以很好地帮助解决这类问题场景。</p><h1 id="使用享元模式的原因">使用享元模式的原因</h1><p>使用享元模式的原因，主要有以下两个：</p><ol><li><strong>减少内存消耗，节省服务器成本。</strong> 比如，当大量商家的商品图片、固定文字（如商品介绍、商品属性）在不同的网页进行展示时，通常不需要重复创建对象，而是可以使用同一个对象，以避免重复存储而浪费内存空间。由于通过享元模式构建的对象是共享的，所以当程序在运行时不仅不用重复创建，还能减少程序与操作系统的 IO 交互次数，大大提升了读写性能；<li><strong>聚合同一类的不可变对象，提高对象复用性。</strong> 比如，Java 中的 Number 对象族类（Integet、Long、Double 等）都是使用了享元模式例子，通过缓存不同范围数值来重复使用相同的数值。</ol><h1 id="优缺点">优缺点</h1><p>通过上面的分析，我们可以得出使用享元模式主要有以下优点。</p><ul><li><strong>可以极大减少内存中对象的数量，使得相同对象或相似对象在内存中只保存一份。</strong><li><strong>通过封装内存特有的运行状态，达到共享对象之间高效复用的目的。</strong></ul><p>同样，享元模式也不是万能的，它也有一些缺点：</p><ul><li><strong>以时间换空间，间接增加了系统的实现复杂度</strong>。比如，需要分离出内部状态和外部状态，其中，外部状态这个定义比较模糊，也很难统一，而内部状态除了一些常用的常量容易被找到以外，那些更通用的组件对象在不同的业务系统中其实是不容易被找到的，因为不同的人对相似对象的理解并不一致，这就需要对程序员的代码设计实现思维有一定的要求。<li><strong>运行时间更长，对于一些需要快速响应的系统并不合适</strong>。享元模式的目的是节省空间，而没有说需要提供更短的时间，这适合数据类项目的使用，而不适合一些有高并发要求的系统。</ul><h1 id="总结">总结</h1><p>享元模式为共享对象定义了一个很好的结构范例。不过，用好享元模式的<strong>关键在于找到不可变对象</strong>，比如，常用数字、字符等。之所以做对象共享而不是对象复制的一个很重要的原因，就在于节省对象占用的内存空间大小。</p><p>缓存模式和享元模式最大的区别就是：</p><ol><li><strong>享元模式强调的是空间效率</strong>，比如，一个很大的数据模型对象如何尽量少占用内存并提供可复用的能力；<li><strong>缓存模式强调的是时间效率</strong>，比如：缓存秒杀的活动数据和库存数据等，数据可能会占用很多内存和磁盘空间，但是得保证在大促活动开始时要能及时响应用户的购买需求。也就是说，两者本质上解决的问题类型是不同的。</ol><p>虽然享元模式应用不如缓存模式多，但是对于超大型数据模式来说，它却是非常有效的优化方法之一。特别是对于现在越来越多的数据系统来说，共享变得更加重要，因为复制虽然时间效率更高，但是空间上可能完全不够。、</p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/design-pattern/'>Design Pattern</a>, <a href='/categories/structural/'>structural</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" class="post-tag no-text-decoration" >设计模式</a> <a href="/tags/design-pattern/" class="post-tag no-text-decoration" >Design Pattern</a> <a href="/tags/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/" class="post-tag no-text-decoration" >享元模式</a> <a href="/tags/flyweight/" class="post-tag no-text-decoration" >Flyweight</a> <a href="/tags/%E5%AF%B9%E8%B1%A1%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/" class="post-tag no-text-decoration" >对象结构型模式</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> 本文由作者按照 <a href="https://creativecommons.org/licenses/by/4.0/"> CC BY 4.0 </a> 进行授权</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">分享</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=享元模式：通过共享对象减少内存加载消耗 - ThinkerWalker&amp;url=/posts/flyweight/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=享元模式：通过共享对象减少内存加载消耗 - ThinkerWalker&amp;u=/posts/flyweight/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://t.me/share/url?url=/posts/flyweight/&amp;text=享元模式：通过共享对象减少内存加载消耗 - ThinkerWalker" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i id="copy-link" class="fa-fw fas fa-link small" data-toggle="tooltip" data-placement="top" title="分享链接" data-title-succeed="链接已复制！"> </i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted"><div class="access"><div id="access-lastmod" class="post"><div class="panel-heading">最近更新</div><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/posts/use-spring-security-to-build-a-user-authentication-system/">Spring Security 的配置体系</a><li><a href="/posts/spring-data-jpa-test/">利用单元测试和集成测试</a><li><a href="/posts/query-annotation/">Spring Data JPA - @Query</a><li><a href="/posts/defining-query-methods/">Spring Data JPA - Defining Query Methods 的命名语法与参数</a><li><a href="/posts/cache-redis-02/">Redis 的数据类型</a></ul></div><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/thread/">thread</a> <a class="post-tag" href="/tags/jvm/">JVM</a> <a class="post-tag" href="/tags/design-pattern/">Design Pattern</a> <a class="post-tag" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a> <a class="post-tag" href="/tags/architecture-design/">Architecture Design</a> <a class="post-tag" href="/tags/backend-system/">Backend System</a> <a class="post-tag" href="/tags/devops/">DevOps</a> <a class="post-tag" href="/tags/spring-security/">Spring Security</a> <a class="post-tag" href="/tags/springboot/">SpringBoot</a> <a class="post-tag" href="/tags/cache/">Cache</a></div></div></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="tail-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>相关文章</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/bridge/"><div class="card-body"> <em class="timeago small" data-ts="1518095912" > 2018-02-08 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>桥接模式：实现抽象协议与不同实现的绑定</h3><div class="text-muted small"><p> 桥接模式。桥接模式的原理非常简单，但是使用起来会有一定的难度，所以相对于适配器模式来说，在理解桥接模式时，重点是能跳出局部，多从整体结构上去思考。 模式原理 定义是：将抽象部分与它的实现部分分离，使它们都可以独立地变化。 不过，这里的抽象常常容易被理解为抽象类，并将实现理解为继承后的“派生类”，但是这样理解存在局限性，因为 GoF 的本意是想表达“从对象与对象间的关系去看，做抽象实体与抽象...</p></div></div></a></div><div class="card"> <a href="/posts/composite/"><div class="card-body"> <em class="timeago small" data-ts="1518185912" > 2018-02-09 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>组合模式：实现抽象协议与不同实现的绑定</h3><div class="text-muted small"><p> 单纯从字面上来看，很容易将“组合模式”和“组合关系”搞混。 组合模式最初只是用于解决树形结构的场景，更多的是处理对象组织结构之间的问题。 组合关系则是通过将不同对象封装起来完成一个统一功能。 虽然组合模式并不常用，但是学习它的原理能够获得更多复杂结构上的思考。比如： MySQL 的索引设计中就是用了 B+ 树算法的组合模式设计，极大地提升了数据查询时的性能。 组合模式的原理...</p></div></div></a></div><div class="card"> <a href="/posts/decorator/"><div class="card-body"> <em class="timeago small" data-ts="1518272312" > 2018-02-10 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>装饰器模式：在基础组件上扩展新功能</h3><div class="text-muted small"><p> 装饰器模式看上去和适配器模式、桥接模式很相似，都是使用组合方式来扩展原有类的，但其实本质上却相差甚远呢。 简单来说，适配器模式侧重于转换，而装饰模式侧重于动态扩展；桥接模式侧重于横向宽度的扩展，而装饰模式侧重于纵向深度的扩展。 原理 装饰模式的原始定义是：允许动态地向一个现有的对象添加新的功能，同时又不改变其结构，相当于对现有的对象进行了一个包装。 这个定义非常清晰易懂，因为不能直接...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/facade/" class="btn btn-outline-primary" prompt="上一篇"><p>门面模式：实现 API 网关的高可用性</p></a> <a href="/posts/proxy-pattern/" class="btn btn-outline-primary" prompt="下一篇"><p>代理模式：控制和管理对象访问</p></a></div></div></div></div><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center text-muted"><div class="footer-left"><p class="mb-0"> © 2022 <a href="https://twitter.com/happymaya">superhsc</a>. <span data-toggle="tooltip" data-placement="top" title="除非另有说明，本网站上的博客文章均由作者按照知识共享署名 4.0 国际 (CC BY 4.0) 许可协议进行授权。">保留部分权利。</span></p></div><div class="footer-right"><p class="mb-0"> 本站由 <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> 生成，采用 <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> 主题。</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-sm-11 post-content"><div id="search-hints"><div id="access-tags"><div class="panel-heading">热门标签</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/thread/">thread</a> <a class="post-tag" href="/tags/jvm/">JVM</a> <a class="post-tag" href="/tags/design-pattern/">Design Pattern</a> <a class="post-tag" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a> <a class="post-tag" href="/tags/architecture-design/">Architecture Design</a> <a class="post-tag" href="/tags/backend-system/">Backend System</a> <a class="post-tag" href="/tags/devops/">DevOps</a> <a class="post-tag" href="/tags/spring-security/">Spring Security</a> <a class="post-tag" href="/tags/springboot/">SpringBoot</a> <a class="post-tag" href="/tags/cache/">Cache</a></div></div></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><script src="https://cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js"></script> <script> $(function() { function updateMermaid(event) { if (event.source === window && event.data && event.data.direction === ModeToggle.ID) { const mode = event.data.message; if (typeof mermaid === "undefined") { return; } let expectedTheme = (mode === ModeToggle.DARK_MODE? "dark" : "default"); let config = { theme: expectedTheme }; /* Re-render the SVG › <https://github.com/mermaid-js/mermaid/issues/311#issuecomment-332557344> */ $(".mermaid").each(function() { let svgCode = $(this).prev().children().html(); $(this).removeAttr("data-processed"); $(this).html(svgCode); }); mermaid.initialize(config); mermaid.init(undefined, ".mermaid"); } } let initTheme = "default"; if ($("html[data-mode=dark]").length > 0 || ($("html[data-mode]").length == 0 && window.matchMedia("(prefers-color-scheme: dark)").matches ) ) { initTheme = "dark"; } let mermaidConf = { theme: initTheme /* <default|dark|forest|neutral> */ }; /* Markdown converts to HTML */ $("pre").has("code.language-mermaid").each(function() { let svgCode = $(this).children().html(); $(this).addClass("unloaded"); $(this).after(`<div class=\"mermaid\">${svgCode}</div>`); }); mermaid.initialize(mermaidConf); window.addEventListener("message", updateMermaid); }); </script><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"> {categories} {tags}</div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">搜索结果为空</p>', templateMiddleware: function(prop, value, template) { if (prop === 'categories') { if (value === '') { return `${value}`; } else { return `<div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`; } } if (prop === 'tags') { if (value === '') { return `${value}`; } else { return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`; } } } }); </script> <script src="https://cdn.jsdelivr.net/combine/npm/magnific-popup@1/dist/jquery.magnific-popup.min.js,npm/lozad/dist/lozad.min.js,npm/clipboard@2/dist/clipboard.min.js"></script> <script src="https://cdn.jsdelivr.net/combine/npm/dayjs@1/dayjs.min.js,npm/dayjs@1/locale/zh.min.js,npm/dayjs@1/plugin/relativeTime.min.js,npm/dayjs@1/plugin/localizedFormat.min.js"></script> <script defer src="/assets/js/dist/post.min.js"></script> <script> /* see: <https://docs.mathjax.org/en/latest/options/input/tex.html#tex-options> */ MathJax = { tex: { inlineMath: [ /* start/end delimiter pairs for in-line math */ ['$','$'], ['\\(','\\)'] ], displayMath: [ /* start/end delimiter pairs for display math */ ['$$', '$$'], ['\\[', '\\]'] ] } }; </script> <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script> <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"> </script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.bundle.min.js"></script> <script defer src="/app.js"></script>
