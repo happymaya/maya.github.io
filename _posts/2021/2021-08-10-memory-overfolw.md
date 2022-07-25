@@ -3,7 +3,7 @@ title: 模拟 JVM 内存溢出场景
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-12-19 12:13:00 +0800
+date: 2021-08-10 12:13:00 +0800
 categories: [Java, JVM]
 tags: [JVM]
 math: true
@@ -196,7 +196,7 @@ Process finished with exit code 0
 
 VisualVM 的截图展示了这个溢出结果。可以看到 Eden 区刚开始还是运行平稳的，内存泄漏之后就开始疯狂回收（其实是提升），老年代内存一直增长，直到 OOM。
 
-![](C:\Users\hsc\Documents\maya\jvm\image\visualvm-oom.jpg)
+![](https://images.happymaya.cn/assert/java/jvm/jvm-10-01.png)
 
 很多参数会影响对象的分配行为，但不是非常必要，一般不去主动调整它们。为了观察这些参数的默认值，通常使用 `-XX:+PrintFlagsFinal 参数`，输出一些设置信息：
 
@@ -206,7 +206,9 @@ java -XX:+PrintFlagsFinal 2 > &1 | grep SurvivorRatio
 
 输入如下信息：
 
-![](C:\Users\hsc\Documents\maya\jvm\image\PrintFlagsFinal.png)
+```java
+uintx SurvivorRatio = 8 {product} {default}
+```
 
 Java13 输出了几百个参数和默认值，通过修改一些参数来观测一些不同的行为：
 
@@ -245,7 +247,7 @@ java
     -XX:-OmitStackTraceInFastThrow OOMTest
 ```
 
-![](C:\Users\hsc\Documents\maya\jvm\image\heap-gc-g1-oom.jpg)
+![](https://images.happymaya.cn/assert/java/jvm/jvm-10-02.png)
 
 可以通过`-XX:G1HeapRegionSize=<N>M`命令调整小堆区的大小。
 
@@ -351,6 +353,8 @@ java
 ```
 
 在启动的时候，限制 Metaspace 空间大小为 16MB。可以看到运行一小会之后，Metaspace 会发生内存溢出。
+
+![](https://images.happymaya.cn/assert/java/jvm/jvm-10-03.png)
 
 假如把堆 Metaspace 的限制给去掉，会更可怕。它占用的内存会一直增长。
 
@@ -500,7 +504,7 @@ Exception in thread "main" java.lang.StackOverflowError
 
 这是趣味性和技巧性非常突出的一个问题。通过执行 `dmesg` 命令，大概率会看到进程崩溃信息躺在那里。
 
-![](C:\Users\hsc\Documents\maya\jvm\image\dmesg.jpg)
+![](https://images.happymaya.cn/assert/java/jvm/jvm-10-04.png)
 
 为了能看到发生的时间，我习惯性加上参数 T（dmesg -T）。
 

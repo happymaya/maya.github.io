@@ -1,9 +1,9 @@
 ---
-title: 内存泄漏的思路
+title: 解决内存泄漏的思路
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-12-20 12:13:00 +0800
+date: 2021-08-11 12:13:00 +0800
 categories: [Java, JVM]
 tags: [JVM]
 math: true
@@ -29,6 +29,8 @@ mermaid: true
 
 我们有个线上应用，单节点在运行一段时间后，CPU 的使用会飙升，一旦飙升，一般怀疑某个业务逻辑的计算量太大，或者是触发了死循环（比如著名的 HashMap 高并发引起的死循环），但排查到最后其实是 GC 的问题。
 
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-01.png)
+
 在 Linux 上，分析哪个线程引起的 CPU 问题，通常有一个固定的步骤，如下：
 
 1. `top`，使用 top 命令，查找到使用 CPU 最多的某个进程，记录它的 pid。使用 Shift + P 快捷键可以按 CPU 的使用率进行排序；
@@ -37,7 +39,11 @@ mermaid: true
 4. `jstack $pid > $pid.log`，使用 jstack 命令，查看 Java 进程的线程栈；
 5. `less $pid.log`；使用 less 命令查看生成的文件，并查找刚才转化的十六进制 tid，找到发生问题的线程上下文。
 
-在 jstack 日志中找到了 CPU 使用最多的几个线程。可以看到问题发生的根源，是堆已经满了，但是又没有发生 OOM，于是 GC 进程就一直在那里回收，回收的效果又非常一般，造成 CPU 升高应用假死。
+在 jstack 日志中找到了 CPU 使用最多的几个线程。
+
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-02.png)
+
+可以看到问题发生的根源，是堆已经满了，但是又没有发生 OOM，于是 GC 进程就一直在那里回收，回收的效果又非常一般，造成 CPU 升高应用假死。
 
 接下来，就是具体问题排查，需要把内存 dump 一份下来，使用 MAT 等工具分析具体原因！
 
@@ -60,7 +66,7 @@ mermaid: true
 
 **问题不是凭空产生的，在分析时，一般要收集系统的整体变更集合，比如代码变更、网络变更，甚至数据量的变化。**
 
-![](C:\Users\hsc\Documents\maya\jvm\image\problem-hanlder-12.jpg)
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-03.png)
 
 ### 保留信息
 
@@ -78,8 +84,6 @@ ss 命令将系统的所有网络连接输出到 ss.dump 文件中。
 后续的处理，通过查看各种网络连接状态的梳理，来排查 TIME_WAIT 或者 CLOSE_WAIT，或者其他连接过高的问题，非常有用。
 
 线上有个系统更新之后，监控到 CLOSE_WAIT 的状态突增，最后整个 JVM 都无法响应。**CLOSE_WAIT 状态的产生一般都是代码问题，使用 jstack 最终定位到是因为 HttpClient 的不当使用而引起的，多个连接不完全主动关闭。**
-
-![](C:\Users\hsc\Documents\maya\jvm\image\network-ss.png)
 
 #### 网络状态统计
 
@@ -216,6 +220,23 @@ jhsdb jmap  --binaryheap --pid  37340
 
 ### 内存泄漏的现象
 
+ jmap 命令，它在 9 版本里被干掉了，取而代之的是 jhsdb，你可以像下面的命令一样使用。
+
+```java
+jhsdb jmap  --heap --pid  37340
+jhsdb jmap  --pid  37288
+jhsdb jmap  --histo --pid  37340
+jhsdb jmap  --binaryheap --pid  37340
+```
+
+heap 参数能够帮我们看到大体的内存布局，以及每一个年代中的内存使用情况。这和我们前面介绍的内存布局，以及在 VisualVM 中看到的 没有什么不同。但由于它是命令行，所以使用更加广泛。
+
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-04.png)
+
+histo 能够大概的看到系统中每一种类型占用的空间大小，用于初步判断问题。比如某个对象 instances 数量很小，但占用的空间很大，这就说明存在大对象。但它也只能看大概的问题，要找到具体原因，还是要 dump 出当前 live 的对象。
+
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-05.png)
+
 一般内存溢出，表现形式就是 Old 区的占用持续上升，即使经过了多轮 GC 也没有明显改善。内存泄漏的根本就是，有些对象并没有切断和 GC Roots 的关系，可通过一些工具，能够看到它们的联系。
 
 ### 一个卡顿实例
@@ -249,6 +270,8 @@ find / | grep "x"
 swap 是很多性能场景的万恶之源，建议禁用。当你的应用真正高并发了，SWAP 绝对能让你体验到它魔鬼性的一面：进程倒是死不了了，但 GC 时间长的却让人无法忍受。
 
 ### 内存泄漏
+
+![](https://images.happymaya.cn/assert/java/jvm/jvm-11-06.png)
 
 内存溢出和内存泄漏的区别：
 
@@ -313,4 +336,27 @@ swap 是很多性能场景的万恶之源，建议禁用。当你的应用真正
 ​    
 
   - 关于文件处理器的应用，在读取或者写入一些文件之后，由于发生了一些异常，close 方法又没有放在 finally 块里面，造成了文件句柄的泄漏。由于文件处理十分频繁，产生了严重的内存泄漏问题。
+
   - 另外，对 Java API 的一些不当使用，也会造成内存泄漏。有喜欢使用 String 的 intern 方法，但如果字符串本身是一个非常长的字符串，而且创建之后不再被使用，则会造成内存泄漏。
+
+    ```java
+    import java.util.UUID;
+    
+    public class InternDemo {
+        static String getLongStr() {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 100000; i++) {
+                sb.append(UUID.randomUUID().toString());
+            }
+            return sb.toString();
+        }
+    
+        public static void main(String[] args) {
+            while (true) {
+                getLongStr().intern();
+            }
+        }
+    }
+    ```
+
+    

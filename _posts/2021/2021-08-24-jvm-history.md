@@ -3,12 +3,13 @@ title: JVM 的历史与展望
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2019-12-30 22:33:00 +0800
+date: 2021-08-24 22:15:44 +0800
 categories: [Java, JVM]
 tags: [JVM]
 math: true
 mermaid: true
 ---
+
 ## JVM 的历史
 
 众所周知，Java 目前被 Oracle 控制，它是从 Sun 公司手中收购的，HotSpot 最初也并非由 Sun 公司开发，是由一家名为 Longview Technologies 的小公司设计的，而且这款虚拟机一开始也不是为 Java 语言开发的。

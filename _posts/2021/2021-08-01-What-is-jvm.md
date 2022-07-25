@@ -10,7 +10,6 @@ math: true
 mermaid: true
 ---
 
-
 1. 为什么 Java 研发系统需要 JVM ?
 2. JVM 的原理是什么 ？
 3. 写的 Java 代码到底是如何运行起来的 ？
@@ -18,7 +17,6 @@ mermaid: true
 想要完美回答这三个问题，就需要首先了解 JVM 是什么 ？ 它和 Java 有什么关系 ？ 又与 JDK 有什么渊源 ？
 
 为了弄清楚这写问题，我是从以下三个维度思考的：
-
 1. JVM 和操作系统的关系 ？
 2. JVM、JRE、JDK 的关系 ？
 3. Java 虚拟机规范和 Java 语言规范的关系 ？

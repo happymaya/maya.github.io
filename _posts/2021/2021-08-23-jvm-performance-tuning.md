@@ -3,12 +3,13 @@ title: 大型项目性能调优 —— JVM
 author:
   name: superhsc
   link: https://github.com/happymaya
-date: 2022-01-01 15:03:00 +0800
+date: 2021-08-23 21:23:00 +0800
 categories: [Java, JVM]
-tags: [JVM, JIT, JITWatch, 方法内联, 逃逸分析，编译层次]
+tags: [JVM]
 math: true
 mermaid: true
 ---
+
 
 性能调优是一个非常大，并且非常模糊的话题。
 
@@ -20,7 +21,7 @@ mermaid: true
 
 当一个系统出现问题的时候，一般不会想要立刻优化 JVM，会优先尝试从最高层次上进行问题的解决：解决最主要的瓶颈点。下面是一张关于优化层次的图，箭头表示优化时需要考虑的路径（也有例外）
 
-![](https://images.happymaya.cn/assert/java/jvm/jvm-23-01.png)
+![](https://images.happymaya.cn/assert/assert/java/jvm/jvm-23-01.png)
 
 ### 数据库优化
 
