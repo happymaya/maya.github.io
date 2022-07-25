@@ -55,9 +55,8 @@ protected void configure(HttpSecurity http) throws Exception {
 ```
 上述代码是 `Spring Security` 中用户认证和访问授权的默认实现，这里用到了多个常见的配置方法。
 ​
+一旦在代码类路径中引入 `Spring Security` 框架之后，访问任何端点时就会弹出一个登录界面用来完成用户认证。
 
-回想[《Spring Security 是一款怎样的安全框架》](https://www.yuque.com/docs/share/0035d9af-2768-417f-a9db-b36a255bbffa?# 《01 | Spring Security 是一款怎样的安全框架？》)中描述的，一旦在代码类路径中引入 `Spring Security` 框架之后，访问任何端点时就会弹出一个登录界面用来完成用户认证。
-**​**
 
 **认证是授权的前置流程**，认证结束之后就可以进入到授权环节。
 ​
@@ -65,9 +64,9 @@ protected void configure(HttpSecurity http) throws Exception {
 结合这些配置方法，简单分析一下默认效果的实现：
 
 1. 通过 `HttpSecurity` 类的 `authorizeRequests()`方法对所有访问 `HTTP` 端点的 `HttpServletReques` 进行限制；
-1. `anyRequest().authenticated()` 语句指定了对所有请求都需要执行认证（没有通过认证的用户无法访问任何端点）；
-1. `formLogin()` 语句用于指定使用表单登录作为认证方式（会弹出一个登录界面）
-1. `httpBasic()` 语句表示可以使用 HTTP 基础认证`（Basic Authentication）`方法来完成认证
+2. `anyRequest().authenticated()` 语句指定了对所有请求都需要执行认证（没有通过认证的用户无法访问任何端点）；
+3. `formLogin()` 语句用于指定使用表单登录作为认证方式（会弹出一个登录界面）
+4. `httpBasic()` 语句表示可以使用 HTTP 基础认证`（Basic Authentication）`方法来完成认证
 
 
 
@@ -77,7 +76,7 @@ protected void configure(HttpSecurity http) throws Exception {
 在 `Spring Security 中`，存在一批类似于 `WebSecurityConfigurerAdapter` 的配置类。
 
 
-## 2 实现 HTTP 基础认证和表单登录认证
+## 实现 HTTP 基础认证和表单登录认证
 
 
 `httpBasic() 和 formLogin()` 是控制用户认证的实现手段，分别代表了：
@@ -88,15 +87,13 @@ protected void configure(HttpSecurity http) throws Exception {
 在构建 Web 应用程序时，在 `Spring Security` 提供的认证机制的基础上进行扩展，以满足日常开发需求。
 
 
-### 2.1 HTTP 基础认证
+### HTTP 基础认证
 
 
 `HTTP` 基础认证原理较为简单，只需要**通过 **`**HTTP**`**协议消息头携带的用户名和密码**进行登录验证。
 
-
-在[《Spring Security 是一款怎样的安全框架》](https://www.yuque.com/docs/share/0035d9af-2768-417f-a9db-b36a255bbffa?# 《01 | Spring Security 是一款怎样的安全框架？》)中通过浏览器简单验证用户登录操作，现在，引入` Postman` 对登录的请求和响应进一步分析。
+通过浏览器简单验证用户登录操作，现在，引入` Postman` 对登录的请求和响应进一步分析。
 ​
-
 在` Postman` 中，之间访问` http://localhost:8080/hello` 端点，得到如下所示的响应：
 ```json
 {
@@ -114,7 +111,7 @@ protected void configure(HttpSecurity http) throws Exception {
 接下来，执行 `HTTP`基础认证，通过设置认证类型为 `Basic Auth` 并输入对应用户名和密码完成`HTTP` 端点的访问。
 ​
 
-再次查看 `HTTP` 请求，可以看到 Request Header 中添加了 [ Authorization](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Authorization?fileGuid=xxQTRXtVcqtHK6j8) 标头，格式为：`Authorization: <type> <credentials>`，这里的 type 就是“Basic”，而 credentials 则是这样一个字符串：
+再次查看 `HTTP` 请求，可以看到 Request Header 中添加了 [Authorization](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Authorization?fileGuid=xxQTRXtVcqtHK6j8) 标头，格式为：`Authorization: <type> <credentials>`，这里的 type 就是“Basic”，而 credentials 则是这样一个字符串：
 ```json
 dXNlcjo5YjE5MWMwNC1lNWMzLTQ0YzctOGE3ZS0yNWNkMjY3MmVmMzk=
 ```
@@ -134,7 +131,7 @@ HTTP 基础认证比较简单，没有定制的登录页面，所以单独使用
 在使用 `Spring Security` 时，**一般会把 HTTP 基础认证和表单登录认证结合起来**一起使用。
 ​
 
-### 2.2 表单登录认证 
+### 表单登录认证 
 在 `WebSecurityConfigurerAdapter` 的`configure()` 方法中，一旦配置了 `HttpSecurity` 的 `formLogin()` 方法，就启动了表单登录认证，如下所示：
 ```java
 protected void configure(HttpSecurity http) throws Exception {
@@ -160,7 +157,7 @@ protected void configure(HttpSecurity http) throws Exception {
 ```
 
 
-## 3 配置 Spring Security 用户认证体系
+## 配置 Spring Security 用户认证体系
 ​
 
 因为 `Spring Security` 默认提供的用户名是固定的，而密码会随着每次应用程序的启动而变化，所以很不灵活。
@@ -216,11 +213,11 @@ protected void configure(AuthenticationManagerBuilder builder) throws Exception 
 
 ```
 可以看到，基于内存的用户信息存储方案实现也比较简单，但同样缺乏灵活性，因为用户信息是写死在代码里的。
-### 3.2  基于数据库的用户信息存储方案
+### 基于数据库的用户信息存储方案
 既然是将用户信息存储在数据库中，势必需要**创建表结构**。
 ​
 
-可以在 `Spring Security` 的源文件中找到对应 [SQL 语句](org/springframework/security/core/userdetails/jdbc/users.ddl)，如下所示：
+可以在 `Spring Security` 的源文件中找到对应 `org/springframework/security/core/userdetails/jdbc/users.ddl 找到 SQL 语句，如下所示：
 ```sql
 create table users (
   username varchar_ignorecase(50) not null primary key,
